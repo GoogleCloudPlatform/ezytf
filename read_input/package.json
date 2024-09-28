@@ -1,0 +1,30 @@
+{
+  "name": "function-sheet-2-yaml",
+  "version": "1.0.0",
+  "description": "converts sheet to yaml",
+  "main": "cloudfunction.js",
+  "type": "module",
+  "scripts": {
+    "test": "jest",
+    "start": "npx functions-framework --target=readInputGenerateTF",
+    "read": "node main.js read",
+    "read-generate": "node main.js generate"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.4.0",
+    "@google-cloud/local-auth": "^2.1.0",
+    "@google-cloud/storage": "^7.11.2",
+    "googleapis": "^105.0.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@eslint/js": "^9.10.0",
+    "babel-jest": "^29.7.0",
+    "globals": "^15.9.0",
+    "jest": "^29.7.0"
+  }
+}

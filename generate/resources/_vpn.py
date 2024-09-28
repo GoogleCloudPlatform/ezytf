@@ -1,0 +1,61 @@
+from imports.google.compute_external_vpn_gateway import (
+    ComputeExternalVpnGateway,
+    ComputeExternalVpnGatewayInterface,
+)
+from imports.vpn import Vpn
+from imports.vpn_ha import VpnHa
+
+
+def create_vpn(self, vpn):
+    name = vpn["gateway_name"]
+    vpn["network"] = self.tf_ref("network", vpn["network"])
+    Vpn(self, f"vpn_{name}", **vpn)
+
+
+def create_vpn_ha(self, vpn):
+    name = vpn["name"]
+    vpn["network"] = self.tf_ref("network", vpn["network"])
+    if peer_gcp_gateway := vpn.get("peer_gcp_gateway"):
+        vpn["peer_gcp_gateway"] = self.tf_ref("vpn_ha", peer_gcp_gateway)
+
+    if not vpn.get("peer_external_gateway"):
+        for _, tunnel in vpn.get("tunnels", {}).items():
+            if peer_ext_link := tunnel.get("peer_external_gateway_self_link"):
+                tunnel["peer_external_gateway_self_link"] = self.tf_ref(
+                    "external_vpn_gateway", peer_ext_link
+                )
+
+    VpnHa(self, f"vpn_ha_{name}", **vpn)
+
+
+def create_ext_vpn_gtw(self, ext_gtw):
+    gtw_name = ext_gtw["name"]
+    ext_gtw["interface"] = [
+        ComputeExternalVpnGatewayInterface(**interface)
+        for interface in ext_gtw["interface"]
+    ]
+
+    self.created["external_vpn_gateway"][gtw_name] = ComputeExternalVpnGateway(
+        self, f"ext_vpn_gtw_{gtw_name}", **ext_gtw
+    )
+
+
+def generate_external_vpn_gateways(self, my_resource):
+    self.created["external_vpn_gateway"] = self.created.get("external_vpn_gateway",{})
+    for ext_gtw in self.eztf_config.get(my_resource, []):
+        ext_gtw["project"] = self.tf_ref("project", ext_gtw["project"])
+        create_ext_vpn_gtw(self, ext_gtw)
+
+
+def generate_vpn(self, my_resource, resource):
+    for vpn in self.eztf_config.get(my_resource, []):
+        create_vpn(self, vpn)
+
+
+def generate_vpn_ha(self, my_resource, resource):
+    generate_external_vpn_gateways(self, f'external_vpn_gateway_{my_resource}')
+    vpn_ha = self.eztf_config.get(my_resource, [])
+    self.added["vpn_ha"] = self.added.get("vpn_ha", set())
+    self.added["vpn_ha"].update({vpn["name"] for vpn in vpn_ha})
+    for vpn in vpn_ha:
+        create_vpn_ha(self, vpn)

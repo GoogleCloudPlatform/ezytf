@@ -1,0 +1,218 @@
+{
+  "language": "python",
+  "app": "python main.py",
+  "projectId": "0eb0d22d-a32d-4bb1-b84f-8ea1010233ae",
+  "sendCrashReports": "false",
+  "terraformProviders": [
+    {
+      "name": "google",
+      "source": "hashicorp/google",
+      "version": "~> 5.38.0"
+    },
+    {
+      "name": "googleworkspace",
+      "source": "hashicorp/googleworkspace",
+      "version": "~> 0.7.0"
+    },
+    {
+      "name": "null",
+      "source": "hashicorp/null",
+      "version": "~> 3.2.2"
+    }
+  ],
+  "terraformModules": [
+    {
+      "name": "group",
+      "source": "terraform-google-modules/group/google",
+      "version": "~> 0.6.1"
+    },
+    {
+      "name": "project-factory",
+      "source": "terraform-google-modules/project-factory/google",
+      "version": "~> 15.0.1"
+    },
+    {
+      "name": "project_services",
+      "source": "terraform-google-modules/project-factory/google//modules/project_services",
+      "version": "~> 15.0.1"
+    },
+    {
+      "name": "folders_iam",
+      "source": "terraform-google-modules/iam/google//modules/folders_iam",
+      "version": "~> 7.7.1"
+    },
+    {
+      "name": "organizations_iam",
+      "source": "terraform-google-modules/iam/google//modules/organizations_iam",
+      "version": "~> 7.7.1"
+    },
+    {
+      "name": "projects_iam",
+      "source": "terraform-google-modules/iam/google//modules/projects_iam",
+      "version": "~> 7.7.1"
+    },
+    {
+      "name": "network",
+      "source": "terraform-google-modules/network/google",
+      "version": "~> 9.1.0"
+    },
+    {
+      "name": "network_peering",
+      "source": "terraform-google-modules/network/google//modules/network-peering",
+      "version": "~> 9.1.0"
+    },
+    {
+      "name": "firewall_rules",
+      "source": "terraform-google-modules/network/google//modules/firewall-rules",
+      "version": "~> 9.1.0"
+    },
+    {
+      "name": "firewall_policy_rh",
+      "source": "terraform-google-modules/network/google//modules/hierarchical-firewall-policy",
+      "version": "~> 9.1.0"
+    },
+    {
+      "name": "firewall_policy_nw",
+      "source": "terraform-google-modules/network/google//modules/network-firewall-policy",
+      "version": "~> 9.1.0"
+    },
+    {
+      "name": "log_export",
+      "source": "terraform-google-modules/log-export/google",
+      "version": "~> 8.1.0"
+    },
+    {
+      "name": "logbucket",
+      "source": "terraform-google-modules/log-export/google//modules/logbucket",
+      "version": "~> 8.1.0"
+    },
+    {
+      "name": "logpubsub",
+      "source": "terraform-google-modules/log-export/google//modules/pubsub",
+      "version": "~> 8.1.0"
+    },
+    {
+      "name": "logstorage",
+      "source": "terraform-google-modules/log-export/google//modules/storage",
+      "version": "~> 8.1.0"
+    },
+    {
+      "name": "logproject",
+      "source": "terraform-google-modules/log-export/google//modules/project",
+      "version": "~> 8.1.0"
+    },
+    {
+      "name": "logbigquery",
+      "source": "terraform-google-modules/log-export/google//modules/bigquery",
+      "version": "~> 8.1.0"
+    },
+    {
+      "name": "org_policy_v2",
+      "source": "terraform-google-modules/org-policy/google//modules/org_policy_v2",
+      "version": "~> 5.3.0"
+    },
+    {
+      "name": "cloud-router",
+      "source": "terraform-google-modules/cloud-router/google",
+      "version": "~> 6.0.2"
+    },
+    {
+      "name": "vpn",
+      "source": "terraform-google-modules/vpn/google",
+      "version": "~> v4.0.0"
+    },
+    {
+      "name": "vpn_ha",
+      "source": "terraform-google-modules/vpn/google//modules/vpn_ha",
+      "version": "~> v4.0.0"
+    },
+    {
+      "name": "gke",
+      "source": "terraform-google-modules/kubernetes-engine/google",
+      "version": "~> v31.1.0"
+    },
+    {
+      "name": "gke_private",
+      "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-private-cluster",
+      "version": "~> v31.1.0"
+    },
+    {
+      "name": "gke_autopilot",
+      "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-public-cluster",
+      "version": "~> v31.1.0"
+    },
+    {
+      "name": "gke_autopilot_private",
+      "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-private-cluster",
+      "version": "~> v31.1.0"
+    },
+    {
+      "name": "sc_access_level",
+      "source": "terraform-google-modules/vpc-service-controls/google//modules/access_level",
+      "version": "~> v6.0.0"
+    },
+    {
+      "name": "sc_perimeter_bridge",
+      "source": "terraform-google-modules/vpc-service-controls/google//modules/bridge_service_perimeter",
+      "version": "~> v6.0.0"
+    },
+    {
+      "name": "sc_perimeter",
+      "source": "terraform-google-modules/vpc-service-controls/google//modules/regular_service_perimeter",
+      "version": "~> v6.0.0"
+    },
+    {
+      "name": "kms",
+      "source": "terraform-google-modules/kms/google",
+      "version": "~> v2.3.0"
+    },
+    {
+      "name": "pgsql",
+      "source": "terraform-google-modules/sql-db/google//modules/postgresql",
+      "version": "~> v21.0.0"
+    },
+    {
+      "name": "mysql",
+      "source": "terraform-google-modules/sql-db/google//modules/mysql",
+      "version": "~> v21.0.0"
+    },
+    {
+      "name": "mssql",
+      "source": "terraform-google-modules/sql-db/google//modules/mssql",
+      "version": "~> v21.0.0"
+    },
+    {
+      "name": "psa",
+      "source": "terraform-google-modules/sql-db/google//modules/private_service_access",
+      "version": "~> v21.0.0"
+    },
+    {
+      "name": "instance_from_template",
+      "source": "terraform-google-modules/vm/google//modules/compute_instance",
+      "version": "~> v11.1.0"
+    },
+    {
+      "name": "instance_template",
+      "source": "terraform-google-modules/vm/google//modules/instance_template",
+      "version": "~> v11.1.0"
+    },
+    {
+      "name": "mig",
+      "source": "terraform-google-modules/vm/google//modules/mig",
+      "version": "~> v11.1.0"
+    },
+    {
+      "name": "umig",
+      "source": "terraform-google-modules/vm/google//modules/umig",
+      "version": "~> v11.1.0"
+    },
+    {
+      "name": "bigquery",
+      "source": "terraform-google-modules/bigquery/google",
+      "version": "~> v8.1.0"
+    }
+  ],
+  "codeMakerOutput": "imports",
+  "context": {
+  }
+}

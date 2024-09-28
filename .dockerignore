@@ -1,0 +1,25 @@
+.git
+**/.git
+**/.gitignore
+**/.gcloudignore
+# CDKTF, generate
+**/dist
+**/imports
+**/.terraform
+**/cdktf.out
+**/cdktf.log
+**/*terraform.*.tfstate*
+__pycache__
+**/__pycache__
+# read_input
+**/node_modules
+# eztf
+ezytf-gen-data/
+**/.env
+**/runtime_env
+apps_scripts
+generate/gcp-*
+LOCAL.md
+access_token_file
+.vscode
+**/.clasp.json

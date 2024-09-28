@@ -1,0 +1,33 @@
+main:
+  params: [event]
+  steps:
+    - init:
+        assign:
+          - project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT")}
+          - event_bucket: ${event.data.bucket}
+          - event_file: ${event.data.name}
+          - target_bucket: ${sys.get_env("EZTF_CONFIG_BUCKET")}
+          - job_name: ezytf-job
+          - job_location: ${sys.get_env("EZTF_LOCATION")}
+    - check_input_file:
+        switch:
+          - condition: ${event_bucket == target_bucket}
+            next: run_job
+          - condition: true
+            next: end
+    - run_job:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${"namespaces/" + project_id + "/jobs/" + job_name}
+          location: ${job_location}
+          body:
+            overrides:
+              containerOverrides:
+                env:
+                  - name: EZTF_CONFIG_BUCKET
+                    value: ${event_bucket}
+                  - name: EZTF_INPUT_CONFIG
+                    value: ${event_file}
+        result: job_execution
+    - finish:
+        return: ${job_execution}
