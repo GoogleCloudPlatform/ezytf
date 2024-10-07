@@ -28,11 +28,11 @@ function invokeEzyTf() {
   invokeTfGeneration(invokeServiceAccount, cloudRunUrl, true);
 }
 
-function populateFoldersProjects() {
+function listFoldersProjects() {
   populateFoldersProjects("folders", "_FoldersProjectPath");
 }
 
-function fetchRolesToSheet() {
+function listRolesToSheet() {
   fetchRolesToSheet("_RolesList");
 }
 
@@ -44,6 +44,6 @@ function onOpen(e) {
     .addToUi();
   SpreadsheetApp.getUi()
     .createMenu("Custom Load")
-    .addItem("Folders & Project Path", "populateFoldersProjects")
+    .addItem("Folders & Project Path", "listFoldersProjects")
     .addToUi();
 }
