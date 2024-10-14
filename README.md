@@ -1,3 +1,9 @@
+## EzyTF
+
+Effortlessly generate Google Cloud Terraform configurations with the power of Google Sheets
+
+### Google Sheet
+Make a copy of this [Google Sheet](https://docs.google.com/spreadsheets/d/1cvjTM4QiovZVsnrQYRvSAxD6dmru5UZ8384sycsFsRE/edit?usp=sharing), follow details in instruction tab
 
 ### Architecture Diagram
 
@@ -52,6 +58,7 @@ TOKEN=access_token_file && \
 gcloud auth print-access-token > $TOKEN &&
 ADC=~/.config/gcloud/application_default_credentials.json && \
 docker run -p 9090:${PORT} \
+-e EZTF_MODE=service \
 -e EZTF_SHEET_ID=[EZTF_SHEET_ID] \
 -e EZTF_SSM_HOST=[EZTF_SSM_HOST] \
 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/google_adc.json \
