@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google.bigquery_dataset import (
+from cdktf_cdktf_provider_google.bigquery_dataset import (
     BigqueryDataset,
     BigqueryDatasetAccess,
 )
-from imports.google.bigquery_table import (
+from cdktf_cdktf_provider_google.bigquery_table import (
     BigqueryTable,
     BigqueryTableTableConstraintsForeignKeys,
     BigqueryTableExternalDataConfigurationBigtableOptionsColumnFamily,
     BigqueryTableExternalDataConfigurationBigtableOptionsColumnFamilyColumn,
 )
-from imports.google.bigquery_routine import (
+from cdktf_cdktf_provider_google.bigquery_routine import (
     BigqueryRoutine,
     BigqueryRoutineArguments,
 )

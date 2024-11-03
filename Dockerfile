@@ -15,7 +15,7 @@
 FROM nikolaik/python-nodejs:python3.12-nodejs20-alpine
 
 ARG CDKTF_VERSION='0.20.9'
-ARG TF_VERSION='1.9.6'
+ARG TF_VERSION='1.9.8'
 
 LABEL name="ezyTF"
 
@@ -44,7 +44,7 @@ RUN npm install --global cdktf-cli@latest && \
 	cdktf get
 
 COPY read_input/package.json ./read_input/
-RUN cd read_input && npm install
+RUN cd read_input && npm install --omit=dev
 
 COPY . .
 RUN git config --global --add safe.directory '*'

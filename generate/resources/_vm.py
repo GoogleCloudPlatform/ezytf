@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google import compute_instance as ce
-from imports.google.compute_disk import ComputeDisk, ComputeDiskGuestOsFeatures
+from cdktf_cdktf_provider_google import compute_instance as ce
+from cdktf_cdktf_provider_google.compute_disk import (
+    ComputeDisk,
+    ComputeDiskGuestOsFeatures,
+)
 from imports.instance_from_template import InstanceFromTemplate
 from imports.instance_template import InstanceTemplate
 from imports.mig import Mig

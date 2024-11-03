@@ -16,9 +16,9 @@ from cdktf import (
     TerraformIterator,
     Token,
 )
-from imports.google.organization_iam_member import OrganizationIamMember
-from imports.google.folder_iam_member import FolderIamMember
-from imports.google.project_iam_member import ProjectIamMember
+from cdktf_cdktf_provider_google.organization_iam_member import OrganizationIamMember
+from cdktf_cdktf_provider_google.folder_iam_member import FolderIamMember
+from cdktf_cdktf_provider_google.project_iam_member import ProjectIamMember
 import util
 
 

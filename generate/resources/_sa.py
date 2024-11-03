@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google.service_account import ServiceAccount
+from cdktf_cdktf_provider_google.service_account import ServiceAccount
 
 
 def create_sa(self, sa):

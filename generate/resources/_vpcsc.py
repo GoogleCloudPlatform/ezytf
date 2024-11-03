@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google.access_context_manager_access_policy import (
+from cdktf_cdktf_provider_google.access_context_manager_access_policy import (
     AccessContextManagerAccessPolicy,
 )
 from imports.sc_access_level import ScAccessLevel
 from imports.sc_perimeter import ScPerimeter
 from imports.sc_perimeter_bridge import ScPerimeterBridge
-from imports.null.resource import Resource
-from imports.null.provider import NullProvider
+from cdktf_cdktf_provider_null.resource import Resource
+from cdktf_cdktf_provider_null.provider import NullProvider
 from cdktf import LocalExecProvisioner
 
 

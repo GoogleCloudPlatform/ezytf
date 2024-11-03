@@ -20,7 +20,7 @@ from cdktf import (
     TerraformVariable,
     GcsBackend,
 )
-from imports.google.provider import GoogleProvider
+from cdktf_cdktf_provider_google.provider import GoogleProvider
 import util
 from ._users import generate_users
 from ._group import generate_groups
@@ -126,7 +126,7 @@ creation = {
     "bq_dataset": generate_bigquery_dataset,
     "bq_table": generate_bigquery_table,
     "bq_routine": generate_bigquery_routine,
-    "any_module" : generate_any_module,
+    "any_module": generate_any_module,
 }
 
 data_creation = {"google_org": data_google_org}

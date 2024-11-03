@@ -22,7 +22,7 @@ if [ -f "${EZTF_ACCESS_TOKEN_FILE}" ]; then
 fi
 
 if [[ "${EZTF_MODE}" != "workflow" ]]; then
-    npm run --prefix read_input read
+    npm run --prefix read_input read-generate
 fi
 
 if [[ "${EZTF_MODE}" == "workflow" ]]; then
