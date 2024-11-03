@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google.compute_external_vpn_gateway import (
+from cdktf_cdktf_provider_google.compute_external_vpn_gateway import (
     ComputeExternalVpnGateway,
     ComputeExternalVpnGatewayInterface,
 )
@@ -55,7 +55,7 @@ def create_ext_vpn_gtw(self, ext_gtw):
 
 
 def generate_external_vpn_gateways(self, my_resource):
-    self.created["external_vpn_gateway"] = self.created.get("external_vpn_gateway",{})
+    self.created["external_vpn_gateway"] = self.created.get("external_vpn_gateway", {})
     for ext_gtw in self.eztf_config.get(my_resource, []):
         ext_gtw["project"] = self.tf_ref("project", ext_gtw["project"])
         create_ext_vpn_gtw(self, ext_gtw)
@@ -67,7 +67,7 @@ def generate_vpn(self, my_resource, resource):
 
 
 def generate_vpn_ha(self, my_resource, resource):
-    generate_external_vpn_gateways(self, f'external_vpn_gateway_{my_resource}')
+    generate_external_vpn_gateways(self, f"external_vpn_gateway_{my_resource}")
     vpn_ha = self.eztf_config.get(my_resource, [])
     self.added["vpn_ha"] = self.added.get("vpn_ha", set())
     self.added["vpn_ha"].update({vpn["name"] for vpn in vpn_ha})

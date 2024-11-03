@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google.data_google_organization import DataGoogleOrganization
+from cdktf_cdktf_provider_google.data_google_organization import DataGoogleOrganization
 
 
 def data_google_org(self):

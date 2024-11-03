@@ -16,7 +16,7 @@ from cdktf import (
     TerraformIterator,
     Token,
 )
-from imports.google.project_service import ProjectService
+from cdktf_cdktf_provider_google.project_service import ProjectService
 from imports.project_services import ProjectServices
 
 

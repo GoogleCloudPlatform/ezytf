@@ -14,11 +14,11 @@
 
 import hashlib
 from cdktf import TerraformLocal, Fn
-from imports.google.data_google_service_account_access_token import (
+from cdktf_cdktf_provider_google.data_google_service_account_access_token import (
     DataGoogleServiceAccountAccessToken,
 )
-from imports.googleworkspace.provider import GoogleworkspaceProvider
-from imports.googleworkspace.user import User
+from cdktf_cdktf_provider_googleworkspace.provider import GoogleworkspaceProvider
+from cdktf_cdktf_provider_googleworkspace.user import User
 import util
 
 

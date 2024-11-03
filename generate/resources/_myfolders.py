@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections import deque
-from imports.google.folder import Folder
+from cdktf_cdktf_provider_google.folder import Folder
 import util
 
 

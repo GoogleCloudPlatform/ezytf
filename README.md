@@ -1,11 +1,14 @@
 ## EzyTF
 
-Effortlessly generate Google Cloud Terraform configurations with the power of Google Sheets
+Effortlessly generate Google Cloud Terraform configurations using Google Sheets as input.
+Modular, Customizable and Scalable TF Generation by design.
 
 ### Google Sheet
 Make a copy of this [Google Sheet](https://docs.google.com/spreadsheets/d/1cvjTM4QiovZVsnrQYRvSAxD6dmru5UZ8384sycsFsRE/edit?usp=sharing), follow details in instruction tab
 
 ### Architecture Diagram
+ezytf can be deployed in either service or workflow mode.
+
 
 #### Workflow
 ```mermaid
@@ -45,6 +48,26 @@ flowchart LR
 | EZTF_SSM_HOST      | ssm host `https://[INSTANCE_ID]-[PROJECT_NUMBER].[LOCATION].sourcemanager.dev` | no       |
 | EZTF_MODE          | value:`workflow`/`service` see above diagram for reference                     | no       |
 
+### Install Dependencies
+```
+cd read_input && npm install
+cd ../
+cd generate && pipenv install
+```
+
+### Run Locally
+```
+export EZTF_SHEET_ID=[EZTF_SHEET_ID]
+./generator.sh
+```
+
+### Run locally https mode
+
+```
+npm start --prefix read_input
+curl localhost:8080  -d '{"spreadsheetId":"$EZTF_SHEET_ID", "generateCode":true}' -H "Content-Type: application/json" 
+```
+
 ### Build Locally
 ```
 docker build -t ezytf:latest . -f Dockerfile
@@ -74,7 +97,7 @@ ezytf:latest
 ```
 export ARTIFACT_REGISTRY_PATH=us-docker.pkg.dev/[PROJECT_ID]/[REPO_NAME]/ezytf
 docker tag ezytf:latest $ARTIFACT_REGISTRY_PATH/ezytf:latest . -f Dockerfile && \
-docker push $ARTIFACT_REGISTRY_PATH/ezytf:latest && \
+docker push $ARTIFACT_REGISTRY_PATH/ezytf:latest
 ```
 
 ### Deploy Cloud Run Service (Service mode)
@@ -112,20 +135,8 @@ gcloud run jobs deploy ezytf-generate --region [REGION] --image=$ARTIFACT_REGIST
 --memory 2Gi \
 --cpu 1000m \
 --service-account [EZTF_SERVICE_ACCOUNT] \
+--command="sh generator.sh" \
 --set-env-vars CI=1 \
 --set-env-vars EZTF_MODE=workflow \
 --set-env-vars EZTF_SSM_HOST=[EZTF_SSM_HOST] 
-```
-
-### Run Locally without container
-```
-export EZTF_SHEET_ID=[EZTF_SHEET_ID]
-./generator.sh
-```
-
-### Run locally https mode (cloud run/function)
-
-```
-npm start
-curl localhost:8080  -d '{"spreadsheetId":"$EZTF_SHEET_ID", "generateCode":true}' -H "Content-Type: application/json" 
 ```

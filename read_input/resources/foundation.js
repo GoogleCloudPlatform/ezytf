@@ -124,7 +124,10 @@ function modifyNetworkFirewall(eztf, resourceRangeMap) {
   let [networkObj, network, nats] = groupNetwork(networkArrayObj);
   if (firewallRange) {
     let firewallArrayObj = readMapRange(eztf, firewallRange);
-    eztf.eztfConfig[firewallRange] = groupFirewall(firewallArrayObj, networkObj);
+    eztf.eztfConfig[firewallRange] = groupFirewall(
+      firewallArrayObj,
+      networkObj
+    );
   }
   if (networkRange) {
     eztf.eztfConfig[networkRange] = network;
@@ -135,17 +138,19 @@ function modifyNetworkFirewall(eztf, resourceRangeMap) {
 function groupFirewall(fwArray, network) {
   let firewallObj = fwArray.reduce((firewall, rule) => {
     let nw = rule.network_name;
+    let project = rule.project_id || network[nw]?.project_id || "";
+    let projectNetwork = `${project}/${nw}`;
     let direction = `${rule.direction}_rules`;
-    if (!firewall[nw]) {
-      firewall[nw] = { network_name: nw };
+    if (!firewall[projectNetwork]) {
+      firewall[projectNetwork] = { network_name: nw, project_id: project };
     }
-    if (network[nw]) {
-      firewall[nw]["project_id"] = network[nw]["project_id"];
+    if (!firewall[projectNetwork][direction]){
+      firewall[projectNetwork][direction] = [];
     }
-    if (!firewall[nw][direction]) firewall[nw][direction] = [];
-    firewall[nw][direction].push(rule);
+    firewall[projectNetwork][direction].push(rule);
     delete rule.network_name;
     delete rule.direction;
+    delete rule.project_id;
     return firewall;
   }, {});
   return Object.values(firewallObj);
