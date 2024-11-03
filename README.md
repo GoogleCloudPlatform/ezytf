@@ -1,6 +1,6 @@
 ## EzyTF
 
-Effortlessly generate Google Cloud Terraform configurations using Google Sheets as input.
+Effortlessly generate Google Cloud Terraform configurations using Google Sheets as input.<br>
 Modular, Customizable and Scalable TF Generation by design.
 
 ### Google Sheet
