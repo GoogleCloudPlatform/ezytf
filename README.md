@@ -4,7 +4,7 @@ Effortlessly generate Google Cloud Terraform configurations using Google Sheets 
 Modular, Customizable and Scalable TF Generation by design.
 
 ### Google Sheet
-Make a copy of this [Google Sheet](https://docs.google.com/spreadsheets/d/1cvjTM4QiovZVsnrQYRvSAxD6dmru5UZ8384sycsFsRE/edit?usp=sharing), follow details in instruction tab
+Make a copy of this [Google Sheet](https://docs.google.com/spreadsheets/d/1cvjTM4QiovZVsnrQYRvSAxD6dmru5UZ8384sycsFsRE/copy), follow details in instruction tab
 
 ### Architecture Diagram
 ezytf can be deployed in either service or workflow mode.
