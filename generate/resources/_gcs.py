@@ -17,10 +17,11 @@ from cdktf_cdktf_provider_google.storage_bucket import (
     StorageBucketCors,
     StorageBucketLifecycleRule,
 )
+from imports.ff_gcs import FfGcs
 
 
 def create_gcs(self, gcs):
-    """creates sc access level"""
+    """creates cloud storage"""
     name = gcs["name"]
     gcs["project"] = self.tf_ref("project", gcs["project"])
     if gcs.get("cors"):
@@ -33,6 +34,22 @@ def create_gcs(self, gcs):
 
 
 def generate_gcs(self, my_resource, resource):
-    """creates sc perimeter"""
+    """creates cloud storage"""
     for data in self.eztf_config.get(my_resource, []):
         create_gcs(self, data)
+
+
+def create_ff_gcs(self, gcs):
+    """creates cloud storage"""
+    prefix = gcs.get("prefix") + "-" if gcs.get("prefix") else ""
+    name = prefix + gcs["name"]
+    gcs["project_id"] = self.tf_ref("project", gcs["project_id"])
+
+    self.update_fabric_iam(gcs)
+    self.created["gcs"][name] = FfGcs(self, f"gcs_{name}", **gcs)
+
+
+def generate_ff_gcs(self, my_resource, resource):
+    """creates cloud storage"""
+    for data in self.eztf_config.get(my_resource, []):
+        create_ff_gcs(self, data)

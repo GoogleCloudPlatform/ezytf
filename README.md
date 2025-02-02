@@ -48,6 +48,22 @@ flowchart LR
 | EZTF_SSM_HOST      | ssm host `https://[INSTANCE_ID]-[PROJECT_NUMBER].[LOCATION].sourcemanager.dev` | no       |
 | EZTF_MODE          | value:`workflow`/`service` see above diagram for reference                     | no       |
 
+### API Request body Field
+provide either spreadsheetId or configContent or ezytfConfigGcsPath
+
+| Variable           | Description                                               | Required |
+| ------------------ | --------------------------------------------------------- | -------- |
+| spreadsheetId      | google sheet ID                                           | no       |
+| ezytfConfigGcsPath | ezytf config stored in gcs format gs://BUCKET/OBJECT_PATH | no       |
+| configContent      | config data                                               | no       |
+| configType         | yaml/json, default: yaml                                  | no       |
+| generateCode       | true/false default: false                                 | no       |
+| configBucket       | gcs bucket name to store ezytf config                     | no       |
+| outputBucket       | gcs bucket name to store code output                      | no       |
+
+
+
+
 ### Install Dependencies
 ```
 cd read_input && npm install
@@ -66,6 +82,8 @@ export EZTF_SHEET_ID=[EZTF_SHEET_ID]
 ```
 npm start --prefix read_input
 curl localhost:8080  -d '{"spreadsheetId":"$EZTF_SHEET_ID", "generateCode":true}' -H "Content-Type: application/json" 
+curl localhost:8080  -d '{"ezytfConfigGcsPath":"gs://BUCKET/OBJECT_PATH", "generateCode":true}' -H "Content-Type: application/json"
+curl localhost:8080  -d '{"configContent":"gs://BUCKET/OBJECT_PATH", "generateCode":true}' -H "Content-Type: application/json"
 ```
 
 ### Build Locally

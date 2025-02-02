@@ -24,19 +24,35 @@ functions.http("readInputGenerateTF", async (req, res) => {
     if (req.method !== "POST") {
       return res.status(405).end();
     }
+    const configContent = req.body.configContent;
+    const ezytfConfigGcsPath = req.body.ezytfConfigGcsPath;
+    const configType = req.body.configType || "yaml"; // sheet, yaml, json
     const spreadsheetId = req.body.spreadsheetId;
     const generateCode = req.body.generateCode || false;
     const configBucket =
       req.body.configBucket || process.env.EZTF_CONFIG_BUCKET || "";
-    if (req.body.outputBucket) {
-      process.env.EZTF_OUTPUT_BUCKET = req.body.outputBucket;
-    }
-    console.log(req.body)
-    if (!spreadsheetId) {
-      return res.status(400).send("Missing spreadsheetId parameter");
-    }
+    const outputBucket =
+      req.body.outputBucket || process.env.EZTF_OUTPUT_BUCKET || "";
 
-    await main(spreadsheetId, configBucket, generateCode);
+    console.log(req.body);
+
+    if (spreadsheetId || configContent || ezytfConfigGcsPath) {
+      await main(
+        spreadsheetId,
+        configBucket,
+        outputBucket,
+        generateCode,
+        configType,
+        configContent,
+        ezytfConfigGcsPath
+      );
+    } else {
+      res
+        .status(400)
+        .send(
+          "Provide either spreadsheetId, configContent or ezytfConfigGcsPath"
+        );
+    }
     res.status(200).send("config generation started");
   } catch (error) {
     console.error("Error Generating", error);

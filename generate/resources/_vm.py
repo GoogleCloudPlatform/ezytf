@@ -21,6 +21,7 @@ from imports.instance_from_template import InstanceFromTemplate
 from imports.instance_template import InstanceTemplate
 from imports.mig import Mig
 from imports.umig import Umig
+from imports.ff_compute_vm import FfComputeVm
 
 
 def create_vm(self, vm):
@@ -168,3 +169,34 @@ def generate_umig(self, my_resource, resource):
     "create umig"
     for vm in self.eztf_config.get(my_resource, []):
         create_umig(self, vm)
+
+
+# Fabric
+
+
+def create_ff_vm(self, vm):
+    "create vm"
+    vm_name = vm["name"]
+    vm["project_id"] = self.tf_ref("project", vm["project_id"])
+
+    for ni in vm.get("network_interfaces", []):
+        ni["network"] = self.tf_ref("network", ni["network"])
+        ni["subnetwork"] = self.tf_ref("subnet", ni["subnetwork"])
+
+    if vm.get("service_account", {}).get("email"):
+        vm["service_account"]["email"] = self.tf_ref(
+            "service_account", vm["service_account"]["email"]
+        )
+    for disk_key in ["boot_disk", "attached_disks"]:
+        for disk in vm.get(disk_key, []):
+            if disk.get("source"):
+                disk["source"] = self.tf_ref("disk", disk["source"])
+
+    self.update_fabric_iam(vm)
+    self.created["fabric"]["vm"][vm_name] = FfComputeVm(self, f"vm_{vm_name}", **vm)
+
+
+def generate_ff_vm(self, my_resource, resource):
+    "create compute instance"
+    for vm in self.eztf_config.get(my_resource, []):
+        create_ff_vm(self, vm)

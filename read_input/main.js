@@ -24,6 +24,8 @@ import {
   createYaml,
   cleanRes,
   uploadToGcs,
+  readFromGcsPath,
+  parseConfig,
   writeFile,
   inverseObj,
 } from "./util.js";
@@ -32,6 +34,9 @@ export { main };
 
 const LOCAL_CONFIG_DIR =
   process.env.EZTF_CONFIG_DIR || "../ezytf-gen-data/eztf-config";
+
+const LOCAL_OUTPUT_DIR = process.env.EZTF_OUTPUT_DIR || "../ezytf-gen-data/eztf-output";
+process.env.CI = 1;  
 
 class Eztf {
   constructor() {
@@ -48,7 +53,11 @@ function generateEztfConfig(eztf, tfRanges) {
   let variable = readMapRange(eztf, "variable")[0] || {};
 
   eztf.eztfConfig["variable"] = variable;
-  eztf.eztfConfig["eztf"] = { tf_any_module: {} };
+  eztf.eztfConfig["eztf"] = {
+    tf_any_module: {},
+    tf_any_data: {},
+    tf_any_resource: {},
+  };
   eztf.eztfConfig["eztf"]["stacks"] = flatRanges(tfRanges);
 
   for (const stack of Object.values(tfRanges)) {
@@ -58,9 +67,17 @@ function generateEztfConfig(eztf, tfRanges) {
       );
       const resource = Object.keys(resourceRangeObj)[0];
       const range = resourceRangeObj[resource];
-      if (resource === "any_module") {
+      if (resource === "any_module" || resource === "mod") {
         eztf.eztfConfig["eztf"]["tf_any_module"][range] =
           eztf.rangeNoteKey?.[range]?.["module"] || {};
+      }
+      if (resource === "any_data" || resource === "data") {
+        eztf.eztfConfig["eztf"]["tf_any_data"][range] =
+          eztf.rangeNoteKey?.[range]?.["data"] || {};
+      }
+      if (resource === "any_resource" || resource === "res") {
+        eztf.eztfConfig["eztf"]["tf_any_resource"][range] =
+          eztf.rangeNoteKey?.[range]?.["resource"] || {};
       }
       if (Object.prototype.hasOwnProperty.call(modifyResource, resource)) {
         console.log("Custom Modify: ", Object.values(resourceRangeObj).join());
@@ -71,19 +88,20 @@ function generateEztfConfig(eztf, tfRanges) {
       }
     }
   }
-  let configYaml = createYaml(eztf.eztfConfig);
-  // console.log(configYaml);
-  return configYaml;
 }
 
-function writeEztfConfig(eztf, configYaml, configBucket) {
-  console.log(`configBucket: ${configBucket}`);
-  let configName = eztf.eztfConfig["variable"]["eztf_config_name"] || "ezytf";
-
-  let customerName = cleanRes(eztf.eztfConfig["variable"]["domain"]);
+function getEzytfConfigDetails(eztfConfig) {
+  let configName = eztfConfig["variable"]["eztf_config_name"] || "ezytf";
+  let customerName = cleanRes(eztfConfig["variable"]["domain"]);
   let customer = `gcp-${customerName}-${configName}`;
   let fileName = `${configName}/${customer}.yaml`;
-  let eztfInputConfig = fileName;
+  return [fileName, customer];
+}
+
+function writeEztfConfig(eztfConfig, configBucket, fileName) {
+  let configYaml = createYaml(eztfConfig);
+  console.log(`configBucket: ${configBucket}`);
+  let eztfInputConfig;
 
   if (configBucket) {
     eztfInputConfig = `eztf-config/${fileName}`;
@@ -93,19 +111,28 @@ function writeEztfConfig(eztf, configYaml, configBucket) {
     writeFile(eztfInputConfig, configYaml);
   }
   console.log(`ezyTF yaml config generated, ${eztfInputConfig}`);
-  return [eztfInputConfig, customer];
+  return eztfInputConfig;
 }
 
-function generateTF(eztfInputConfig, customer) {
-  process.env.EZTF_INPUT_CONFIG = eztfInputConfig;
-  process.env.EZTF_CDK_OUTPUT_DIR = customer;
-  process.env.EZTF_OUTPUT_DIR =
-    process.env.EZTF_OUTPUT_DIR || "../ezytf-gen-data/eztf-output";
-  process.env.CI = 1;
+function generateTF(
+  eztfInputConfig,
+  customer,
+  configBucket = "",
+  outputBucket = ""
+) {
+  console.log("running cdktf synth");
 
   exec(
-    `echo $EZTF_INPUT_CONFIG && \
+    `export EZTF_INPUT_CONFIG=${eztfInputConfig} && \
+    export EZTF_CDK_OUTPUT_DIR=${customer} && \
+    export EZTF_OUTPUT_DIR=${LOCAL_OUTPUT_DIR} && \
+    export EZTF_CONFIG_BUCKET=${configBucket} && \
+    export EZTF_OUTPUT_BUCKET=${outputBucket} && \
+    echo $EZTF_INPUT_CONFIG && \
     echo $EZTF_CDK_OUTPUT_DIR && \
+    echo $EZTF_OUTPUT_DIR && \
+    echo $EZTF_CONFIG_BUCKET && \
+    echo $EZTF_OUTPUT_BUCKET && \
     if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE ; fi && \
     cd ../generate && pwd && \
     
@@ -122,20 +149,36 @@ function generateTF(eztfInputConfig, customer) {
   );
 }
 
-async function main(spreadsheetId, configBucket = "", generateCode = false) {
-  let eztf = new Eztf();
-  const tfRanges = await readSheetRanges(eztf, spreadsheetId);
-  logInfo(eztf);
-  const configYaml = generateEztfConfig(eztf, tfRanges);
-
-  let [eztfInputConfig, customer] = writeEztfConfig(
-    eztf,
-    configYaml,
-    configBucket
-  );
+async function main(
+  spreadsheetId = "",
+  configBucket = "",
+  outputBucket = "",
+  generateCode = false,
+  configType = "yaml",
+  configContent = "",
+  ezytfConfigGcsPath = ""
+) {
+  let eztfConfig;
+  let eztfInputConfig;
+  if (spreadsheetId) {
+    let eztf = new Eztf();
+    const tfRanges = await readSheetRanges(eztf, spreadsheetId);
+    logInfo(eztf);
+    generateEztfConfig(eztf, tfRanges);
+    eztfConfig = eztf.eztfConfig;
+  } else if (configContent) {
+    let configData = Buffer.from(configContent, "base64").toString();
+    eztfConfig = parseConfig(configData, configType);
+  } else if (ezytfConfigGcsPath) {
+    let configData = await readFromGcsPath(ezytfConfigGcsPath);
+    console.log(configData);
+    eztfConfig = parseConfig(configData, configType);
+    console.log(eztfConfig);
+  }
+  let [fileName, customer] = getEzytfConfigDetails(eztfConfig);
+  eztfInputConfig = writeEztfConfig(eztfConfig, configBucket, fileName);
   if (generateCode) {
-    console.log("running cdktf synth");
-    generateTF(eztfInputConfig, customer);
+    generateTF(eztfInputConfig, customer, configBucket, outputBucket);
   }
 }
 
@@ -160,12 +203,14 @@ if (import.meta.url.startsWith("file:")) {
       await main(
         process.env.EZTF_SHEET_ID,
         process.env.EZTF_CONFIG_BUCKET,
+        "",
         false
       );
     } else if (mode === "generate") {
       await main(
         process.env.EZTF_SHEET_ID,
         process.env.EZTF_CONFIG_BUCKET,
+        process.env.EZTF_OUTPUT_BUCKET,
         true
       );
     }

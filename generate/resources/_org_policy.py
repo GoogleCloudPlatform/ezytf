@@ -64,9 +64,7 @@ def generate_org_policies(self, my_resource, resource):
         name = org_policy["constraint"]
         if name == "iam.allowedPolicyMemberDomains":
             org_allow_domain = org_policy["rules"][0]["allow"]
-            org_allow_domain.append(
-                self.created["data"]["google_org"].directory_customer_id
-            )
+            org_allow_domain.append(self.tf_ref("customer_id",""))
             org_policy["rules"][0]["allow"] = TerraformLocal(
                 self,
                 "org_allow_member_domain",

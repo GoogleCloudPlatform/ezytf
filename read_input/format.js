@@ -301,6 +301,8 @@ function formatHeaderData(rangeNoteKey, rangeName, header, note) {
       allow_empty_keys: [],
       metadata: {},
       module: {},
+      data: {},
+      resource: {},
     };
   }
   let headerKey = cleanKey(header);
@@ -329,5 +331,11 @@ function formatHeaderData(rangeNoteKey, rangeName, header, note) {
   }
   if (noteHeader.version) {
     rangeNoteKey[rangeName]["module"]["version"] = noteHeader["version"];
+  }
+  if (noteHeader.data) {
+    rangeNoteKey[rangeName]["data"]["name"] = noteHeader["data"];
+  }
+  if (noteHeader.resource) {
+    rangeNoteKey[rangeName]["resource"]["name"] = noteHeader["resource"];
   }
 }

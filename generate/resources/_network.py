@@ -18,6 +18,11 @@ from imports.firewall_policy_nw import FirewallPolicyNw
 from imports.firewall_policy_rh import FirewallPolicyRh
 from imports.network_peering import NetworkPeering
 from imports.cloud_router import CloudRouter
+from imports.ff_net_vpc import FfNetVpc
+from imports.ff_net_vpc_firewall import FfNetVpcFirewall
+from imports.ff_net_firewall_policy import FfNetFirewallPolicy
+
+
 import util
 
 
@@ -85,7 +90,7 @@ def create_fw_policy_nw(self, fp):
 def create_peering(self, pair, peer_module_depends_on):
     local, peer = pair["local_network"], pair["peer_network"]
     peer_name = f"peer_{local}_{peer}"
-    pair["prefix"] = pair.get("prefix","peer")
+    pair["prefix"] = pair.get("prefix", "peer")
     pair["local_network"] = self.tf_ref("network", local)
     pair["peer_network"] = self.tf_ref("network", peer)
     pair["module_depends_on"] = peer_module_depends_on
@@ -156,3 +161,66 @@ def generate_fw_policy_rh(self, my_resource, resource):
 def generate_fw_policy_nw(self, my_resource, resource):
     for fw in self.eztf_config.get(my_resource, []):
         create_fw_policy_nw(self, fw)
+
+
+# Fabric
+
+
+def create_ff_network(self, vpc):
+    vpc_name = vpc["name"]
+    vpc["project_id"] = self.tf_ref("project", vpc["project_id"])
+
+    for subnet in vpc.get("subnets"):
+        self.update_fabric_iam(subnet)
+
+    for subnet in vpc.get("subnets_proxy_only"):
+        self.update_fabric_iam(subnet)
+
+    for subnet in vpc.get("subnets_psc"):
+        self.update_fabric_iam(subnet)
+
+    self.created["fabric"]["network"][vpc_name] = FfNetVpc(
+        self,
+        f"net_{vpc_name}",
+        **vpc,
+    )
+
+
+def create_ff_vpc_firewall(self, fw):
+    vpc_name = fw["network"]
+    fw["project_id"] = self.tf_ref("project", fw["project_id"])
+    fw["network_name"] = self.tf_ref("network", vpc_name)
+
+    FfNetVpcFirewall(
+        self,
+        f"vpcfw_{vpc_name}",
+        **fw,
+    )
+
+
+def create_ff_firewall_policy(self, fw):
+    vpc_name = fw["name"]
+    node_type = self.which_node(fw["parent_id"])
+
+    fw["parent_id"] = self.tf_ref(node_type, fw["parent_id"])
+
+    FfNetFirewallPolicy(
+        self,
+        f"fwpo_{vpc_name}",
+        **fw,
+    )
+
+
+def generate_ff_network(self, my_resource, resource):
+    for vpc in self.eztf_config.get(my_resource, []):
+        create_ff_network(self, vpc)
+
+
+def generate_ff_vpc_firewall(self, my_resource, resource):
+    for fw in self.eztf_config.get(my_resource, []):
+        create_ff_vpc_firewall(self, fw)
+
+
+def generate_ff_firewall_policy(self, my_resource, resource):
+    for fp in self.eztf_config.get(my_resource, []):
+        create_ff_firewall_policy(self, fp)

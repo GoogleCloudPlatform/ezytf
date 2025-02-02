@@ -25,6 +25,11 @@
       "version": "~> 9.3.0"
     },
     {
+      "name": "fabric_net_svpc_access",
+      "source": "terraform-google-modules/network/google//modules/fabric-net-svpc-access",
+      "version": "~> 9.3.0"
+    },
+    {
       "name": "network_peering",
       "source": "terraform-google-modules/network/google//modules/network-peering",
       "version": "~> 9.3.0"
@@ -178,9 +183,96 @@
       "name": "bigquery",
       "source": "terraform-google-modules/bigquery/google",
       "version": "~> v8.1.0"
+    },
+    {
+      "name": "ff_cloud-identity-group",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/cloud-identity-group"
+    },
+    {
+      "name": "ff_organization",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/organization"
+    },
+    {
+      "name": "ff_iam-service-account",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/iam-service-account"
+    },
+    {
+      "name": "ff_gcs",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/gcs"
+    },
+    {
+      "name": "ff_folder",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder"
+    },
+    {
+      "name": "ff_project",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project"
+    },
+    {
+      "name": "ff_net-vpc",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc"
+    },
+    {
+      "name": "ff_net-vpc-firewall",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall"
+    },
+    {
+      "name": "ff_bigquery-dataset",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/bigquery-dataset"
+    },
+    {
+      "name": "ff_logging-bucket",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/logging-bucket"
+    },
+    {
+      "name": "ff_pubsub",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/pubsub"
+    },
+    {
+      "name": "ff_net-swp",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-swp"
+    },
+    {
+      "name": "ff_dns",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns"
+    },
+    {
+      "name": "ff_dns-response-policy",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy"
+    },
+    {
+      "name": "ff_net-firewall-policy",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy"
+    },
+    {
+      "name": "ff_net-address",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-address"
+    },
+    {
+      "name": "ff_net-cloudnat",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat"
+    },
+    {
+      "name": "ff_compute-vm",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/compute-vm"
+    },
+    {
+      "name": "ff_net-vpn-ha",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha"
+    },
+    {
+      "name": "ff_kms",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/kms"
+    },
+    {
+      "name": "ff_certificate-authority-service",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/certificate-authority-service"
+    },
+    {
+      "name": "ff_certificate-manager",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/certificate-manager"
     }
   ],
   "codeMakerOutput": "imports",
-  "context": {
-  }
+  "context": {}
 }

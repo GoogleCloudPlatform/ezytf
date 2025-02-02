@@ -30,8 +30,10 @@ export {
   lowerObj,
   mergeObjArray,
   mergeAddon,
+  readYaml,
   createYaml,
   uploadToGcs,
+  readFromGcsPath,
   nestObject,
   writeFile,
   inverseObj,
@@ -40,6 +42,7 @@ export {
   toNumber,
   groupAddon,
   customSort,
+  parseConfig,
 };
 
 function cleanKey(str) {
@@ -235,18 +238,56 @@ function createYaml(data) {
   return yamlString;
 }
 
+function readYaml(data) {
+  const yamlData = yaml.load(data);
+  return yamlData;
+}
+
+function parseConfig(configData, configType) {
+  // Attempt to parse if it's valid yaml/json
+  let parsedData;
+  if (configType === "yaml") {
+    parsedData = readYaml(configData);
+  } else if (configType === "json") {
+    parsedData = JSON.parse(configData);
+  }
+  return parsedData;
+}
+
 async function uploadToGcs(bucket_name, object_name, contents) {
   const storage = new Storage();
   try {
-    await storage
-      .bucket(bucket_name)
-      .file(object_name)
-      .save(contents);
+    await storage.bucket(bucket_name).file(object_name).save(contents);
     console.log(
       `Successfully pushed file ${object_name} to GCS bucket ${bucket_name}`
     );
   } catch (error) {
     console.log("Failed to push file to GCS bucket: " + error);
+  }
+}
+
+async function readFromGCS(bucketName, fileName) {
+  const storage = new Storage();
+  const bucket = storage.bucket(bucketName);
+  const file = bucket.file(fileName);
+
+  try {
+    const [contents] = await file.download();
+    return contents.toString(); // Convert Buffer to string
+  } catch (error) {
+    console.error(`Error reading file from GCS: ${error}`);
+    return null; // Or throw the error, depending on your needs
+  }
+}
+
+async function readFromGcsPath(gcsPath) {
+  const match = gcsPath.match(/gs:\/\/([^/]+)\/(.+)/);
+  if (match) {
+    const bucketName = match[1];
+    const objectPath = match[2];
+    return await readFromGCS(bucketName, objectPath);
+  } else {
+    return null;
   }
 }
 

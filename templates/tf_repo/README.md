@@ -9,13 +9,13 @@ source script_env
 
 __Create bootstrap project, gcs & service account, enable apis__
 ```
-./setup_project.sh
+bash setup_project.sh
 ```
 
 __For users or groups creation__
 
-- [Create custom role with User & Group permission](https://support.google.com/a/answer/2406043?hl=en)   
-- Assign Created service account (`TF_VAR_setup_service_account` in `script_env`) as admin to that role  
+- [Create custom role with user & group permission](https://support.google.com/a/answer/2406043?hl=en)   
+- [Assign custom role to a service account](https://support.google.com/a/answer/9807615?hl=en#zippy=%2Cassign-a-role-to-a-service-account) (`setup_service_account` in `script_env`)
 
 
 

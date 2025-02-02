@@ -99,6 +99,10 @@ def short_region(region):
     return "".join(cot_reg)
 
 
+def pascal_case(name: str):
+    return name.replace("_", " ").title().replace(" ", "")
+
+
 def get_file_yaml(filename):
     "returns yaml as dict"
     with open(filename, "r", encoding="utf-8") as fp:

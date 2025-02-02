@@ -28,3 +28,36 @@ def generate_sa(self, my_resource, resource):
     "create service account"
     for sa in self.eztf_config.get(my_resource, []):
         create_sa(self, sa)
+
+
+ff_iam_sa_resource_roles = [
+    ("iam_billing_roles", "billing"),
+    ("iam_folder_roles", "folder"),
+    ("iam_organization_roles", "organization"),
+    ("iam_project_roles", "project"),
+    ("iam_sa_roles", "sa"),
+    ("iam_storage_roles", "storage"),
+]
+
+
+def create_ff_iam_sa(self, sa):
+    "create fabric iam service account"
+    tf_sa_id = f'sa_{sa["name"]}_{sa["project_id"]}'
+    name = f'{sa["account_id"]}@{sa["project_id"]}.iam.gserviceaccount.com'
+    sa["project_id"] = self.tf_ref("project", sa["project_id"])
+
+    for key, ref in ff_iam_sa_resource_roles:
+        mod_res = {}
+        for res, roles in sa.get(key, {}).items():
+            res_ref = self.tf_ref(ref, res)
+            mod_res[res_ref] = roles
+        if sa.get(key):
+            sa[key] = mod_res
+
+    self.created["service_account"][name] = ServiceAccount(self, tf_sa_id, **sa)
+
+
+def generate_ff_iam_sa(self, my_resource, resource):
+    "create fabric iam service account"
+    for sa in self.eztf_config.get(my_resource, []):
+        create_ff_iam_sa(self, sa)

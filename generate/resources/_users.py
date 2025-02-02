@@ -48,7 +48,7 @@ def init_workspace_provider(self, users):
     GoogleworkspaceProvider(
         self,
         id="googleworkspace",
-        customer_id=self.created["data"]["google_org"].directory_customer_id,
+        customer_id=self.tf_ref("customer_id", ""),
         access_token=sa_token_access.access_token,
     )
 

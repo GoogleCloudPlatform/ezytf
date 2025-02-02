@@ -23,10 +23,17 @@ from cdktf import (
 from cdktf_cdktf_provider_google.provider import GoogleProvider
 import util
 from ._users import generate_users
-from ._group import generate_groups
-from ._sa import generate_sa
-from ._myfolders import generate_folders
-from ._projects import generate_projects, generate_svc_projects
+from ._group import generate_groups, generate_ff_groups
+from ._org import generate_ff_orgs
+from ._wif import (
+    generate_wif_pool,
+    generate_wi_pool,
+    generate_wif_pool_provider,
+    generate_wi_pool_provider,
+)
+from ._sa import generate_sa, generate_ff_iam_sa
+from ._myfolders import generate_folders, generate_ff_folders
+from ._projects import generate_projects, generate_svc_projects, generate_ff_projects
 from ._iam import generate_iam
 from ._api import generate_project_services
 from ._network import (
@@ -37,20 +44,38 @@ from ._network import (
     add_subnets,
     generate_fw_policy_nw,
     generate_fw_policy_rh,
+    generate_ff_network,
+    generate_ff_vpc_firewall,
+    generate_ff_firewall_policy,
+)
+from ._networking import (
+    generate_ff_swp,
+    generate_ff_dns,
+    generate_ff_dnspo,
+    generate_ff_addr,
+    generate_ff_nat,
 )
 from ._logging import (
     generate_logging,
     generate_log_destination,
     generate_logsink,
     add_dest_sink_map,
+    generate_ff_logbucket,
 )
 from ._monitoring import generate_monitoring
 from ._org_policy import generate_org_policies, generate_custom_org_policies
-from ._vpn import generate_vpn, generate_vpn_ha, generate_external_vpn_gateways
+
+from ._pubsub import generate_ff_pubsub
 from ._gke import generate_gke
 from ._mydata import data_google_org
-from ._kms import generate_kms
-from ._gcs import generate_gcs
+from ._kms import generate_kms, generate_ff_kms
+from ._gcs import generate_gcs, generate_ff_gcs
+from ._vpn import (
+    generate_vpn,
+    generate_vpn_ha,
+    generate_external_vpn_gateways,
+    generate_ff_vpn_ha,
+)
 from ._vm import (
     generate_compute_disk,
     generate_compute_instances,
@@ -58,6 +83,7 @@ from ._vm import (
     generate_instance_template,
     generate_mig,
     generate_umig,
+    generate_ff_vm,
 )
 from ._database import generate_cloudsql
 from ._bigquery import (
@@ -71,21 +97,41 @@ from ._vpcsc import (
     generate_sc_perimeter,
     generate_sc_perimeter_bridge,
 )
+from ._certificate import generate_ff_cas, generate_ff_cm
 from ._any_module import generate_any_module
+from ._any_data import generate_any_data
+from ._any_resource import generate_any_resource
 
 
 creation = {
     "users": generate_users,
     "groups": generate_groups,
+    "ff_groups": generate_ff_groups,
+    "ff_orgs": generate_ff_orgs,
+    "wif_pool": generate_wif_pool,
+    "wi_pool": generate_wi_pool,
+    "wif_pool_provider": generate_wif_pool_provider,
+    "wi_pool_provider": generate_wi_pool_provider,
     "folders": generate_folders,
     "projects": generate_projects,
+    "ff_folders": generate_ff_folders,
+    "ff_projects": generate_ff_projects,
     "iam": generate_iam,
     "service_account": generate_sa,
+    "ff_iam_sa": generate_ff_iam_sa,
     "project_api": generate_project_services,
     "network": generate_networks,
+    "ff_network": generate_ff_network,
+    "ff_vpc_firewall": generate_ff_vpc_firewall,
+    "ff_firewall_policy": generate_ff_firewall_policy,
     "firewall": generate_firewalls,
     "firewall_policy_nw": generate_fw_policy_nw,
     "firewall_policy_rh": generate_fw_policy_rh,
+    "ff_swp": generate_ff_swp,
+    "ff_dns": generate_ff_dns,
+    "ff_dnspo": generate_ff_dnspo,
+    "ff_addr": generate_ff_addr,
+    "ff_nat": generate_ff_nat,
     "_svc_projects": generate_svc_projects,
     "peering": generate_peerings,
     "router": generate_routers,
@@ -96,23 +142,30 @@ creation = {
     "logbucket": generate_log_destination,
     "logbigquery": generate_log_destination,
     "logproject": generate_log_destination,
+    "ff_logbucket": generate_ff_logbucket,
     "monitoring": generate_monitoring,
+    "pubsub": generate_ff_pubsub,
     "org_policy": generate_org_policies,
     "org_node_policy": generate_org_policies,
     "custom_org_policy": generate_custom_org_policies,
     "external_vpn_gateway": generate_external_vpn_gateways,
     "vpn": generate_vpn,
     "vpn_ha": generate_vpn_ha,
+    "ff_vpn_ha": generate_ff_vpn_ha,
     "gke": generate_gke,
     "gke_private": generate_gke,
     "gke_autopilot": generate_gke,
     "gke_autopilot_private": generate_gke,
     "kms": generate_kms,
+    "ff_kms": generate_ff_kms,
+    "ff_cas": generate_ff_cas,
+    "ff_cm": generate_ff_cm,
     "sc_policy": generate_sc_policy,
     "sc_access_level": generate_sc_access_level,
     "sc_perimeter": generate_sc_perimeter,
     "sc_perimeter_bridge": generate_sc_perimeter_bridge,
     "gcs": generate_gcs,
+    "ff_gcs": generate_ff_gcs,
     "cloudsql": generate_cloudsql,
     "pgsql": generate_cloudsql,
     "mysql": generate_cloudsql,
@@ -120,6 +173,7 @@ creation = {
     "vm": generate_compute_instances,
     "vm_template": generate_instance_template,
     "vm_from_template": generate_instance_from_template,
+    "ff_vm": generate_ff_vm,
     "mig": generate_mig,
     "umig": generate_umig,
     "disk": generate_compute_disk,
@@ -127,6 +181,11 @@ creation = {
     "bq_table": generate_bigquery_table,
     "bq_routine": generate_bigquery_routine,
     "any_module": generate_any_module,
+    "mod": generate_any_module,
+    "any_resource": generate_any_resource,
+    "res": generate_any_resource,
+    "any_data": generate_any_data,
+    "data": generate_any_data,
 }
 
 data_creation = {"google_org": data_google_org}
@@ -225,7 +284,7 @@ class MyStack(TerraformStack):
     def ref_principal(self, name):
         p = name.split(":")
         p_type, p_id = p[0], ":".join(p[1:])
-        ref_p_id = self.tf_ref(p_type, p_id)
+        ref_p_id = self.tf_ref(p_type.lower(), p_id)
         return f"{p_type}:{ref_p_id}"
 
     def _re_region_subnet(self, subnet_link):
@@ -233,6 +292,37 @@ class MyStack(TerraformStack):
         if match := re.search(pattern, subnet_link):
             return f"{match.group(1)}/{match.group(2)}"
         return subnet_link
+
+    def update_fabric_iam(self, dic):
+        for key, values in dic.get("iam_bindings_additive", {}).items():
+            principal_ref = self.ref_principal(values.get("member"))
+            dic["iam_bindings_additive"][key]["member"] = principal_ref
+
+        for key, values in dic.get("iam_bindings", {}).items():
+            principal_ref = self.ref_principal(values.get("member"))
+            dic["iam_bindings"][key]["member"] = principal_ref
+
+        for role, principal_list in dic.get("iam", {}).items():
+            principal_ref = [
+                self.ref_principal(principal) for principal in principal_list
+            ]
+            dic["iam"][role] = principal_ref
+
+        iam_by_principals = {}
+        for principal, role_list in dic.get("iam_by_principals", {}).items():
+            principal_ref = self.ref_principal(principal)
+            iam_by_principals[principal_ref] = role_list
+
+        if dic.get("iam_by_principals"):
+            dic["iam_by_principals"] = iam_by_principals
+
+        iam_by_principals_additive = {}
+        for principal, role_list in dic.get("iam_by_principals_additive", {}).items():
+            principal_ref = self.ref_principal(principal)
+            iam_by_principals_additive[principal_ref] = role_list
+
+        if dic.get("iam_by_principals_additive"):
+            dic["iam_by_principals_additive"] = iam_by_principals_additive
 
     def which_node(self, node):
         if not node or node == "/" or node.startswith("organizations/"):
@@ -250,13 +340,22 @@ class MyStack(TerraformStack):
         if default is sentinel:
             default = name
         refname = default
+        if (res_type == "billing" or res_type == "billing_account") and not name:
+            self.ensure_variables(["billing_id"])
+            refname = self.created["vars"]["billing_id"].string_value
+        if res_type == "customer_id" and not name:
+            if self.created.get("data", {}).get("google_org"):
+                refname = self.created["data"]["google_org"].directory_customer_id
+            else:
+                self.ensure_variables(["customer_id"])
+                refname = self.created["vars"]["customer_id"].string_value
         if res_type == "user" and self.created.get("users", {}).get(name):
             refname = self.created["users"][name].primary_email
         if res_type == "group" and self.created.get("groups", {}).get(name):
             refname = self.created["groups"][name].id_output
         if res_type == "group_name" and self.created.get("groups", {}).get(name):
             refname = self.created["groups"][name].name_output
-        if res_type == "service_account" and self.created.get("service_account", {}).get(name):
+        if (res_type == "service_account" or res_type == "serviceaccount") and self.created.get("service_account", {}).get(name):
             refname = self.created["service_account"][name].email
         elif res_type == "network" and self.created.get("network", {}).get(name):
             refname = self.created["network"][name].network_self_link_output
@@ -303,5 +402,9 @@ class MyStack(TerraformStack):
             refname = self.created["bq_table"][name].table_id
         if res_type == "bq_routine" and self.created.get("bq_routine", {}).get(name):
             refname = self.created["bq_routine"][name].routine_id
+        if res_type == "wif_pool" and self.created.get("wif_pool", {}).get(name):
+            refname = self.created["wif_pool"][name].workforce_pool_id
+        if res_type == "wi_pool" and self.created.get("wi_pool", {}).get(name):
+            refname = self.created["wi_pool"][name].workload_identity_pool_id
         return refname
     # fmt: on

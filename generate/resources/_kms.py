@@ -16,17 +16,15 @@ from imports.kms import Kms
 
 
 def create_kms(self, kms):
-    """creates sc access level"""
+    """creates kms"""
     name = kms["keyring"]
     kms["project_id"] = self.tf_ref("project", kms["project_id"])
     owners = []
     for owner in kms.get("owners", []):
         subowners = []
         for principal in owner.split(","):
-            principal = principal.strip().split(":")
-            p_type, principal_id = principal[0], principal[1]
-            principal_id = self.tf_ref(p_type.lower(), principal_id)
-            new_principal = f"{p_type}:{principal_id}"
+            principal = principal.strip()
+            new_principal = self.ref_principal(principal)
             subowners.append(new_principal)
         subowners = ",".join(subowners)
         owners.append(subowners)
@@ -36,6 +34,28 @@ def create_kms(self, kms):
 
 
 def generate_kms(self, my_resource, resource):
-    """creates sc perimeter"""
+    """creates kms"""
+    for data in self.eztf_config.get(my_resource, []):
+        create_kms(self, data)
+
+
+# Fabric
+
+
+def create_ff_kms(self, kms):
+    """creates kms"""
+    name = kms["keyring"]["name"]
+    kms["project_id"] = self.tf_ref("project", kms["project_id"])
+
+    for _, key in kms.get("keys", {}).items():
+        self.update_fabric_iam(key)
+
+    self.update_fabric_iam(kms)
+
+    self.created["fabric"]["kms"][name] = Kms(self, f"kms_{name}", **kms)
+
+
+def generate_ff_kms(self, my_resource, resource):
+    """creates kms"""
     for data in self.eztf_config.get(my_resource, []):
         create_kms(self, data)
