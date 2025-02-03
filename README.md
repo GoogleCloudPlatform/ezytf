@@ -83,7 +83,7 @@ export EZTF_SHEET_ID=[EZTF_SHEET_ID]
 npm start --prefix read_input
 curl localhost:8080  -d '{"spreadsheetId":"$EZTF_SHEET_ID", "generateCode":true}' -H "Content-Type: application/json" 
 curl localhost:8080  -d '{"ezytfConfigGcsPath":"gs://BUCKET/OBJECT_PATH", "generateCode":true}' -H "Content-Type: application/json"
-curl localhost:8080  -d '{"configContent":"gs://BUCKET/OBJECT_PATH", "generateCode":true}' -H "Content-Type: application/json"
+curl localhost:8080  -d '{"configContent":"'$(base64 -w 0 CONFIG_FILE_PATH)'",  "configType": "yaml", "generateCode":true}' -H "Content-Type: application/json"
 ```
 
 ### Build Locally
