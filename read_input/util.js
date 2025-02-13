@@ -411,7 +411,7 @@ async function ssmUri(ssmHost, ssmProject, repoName) {
     ssmProject = await getProjectIdFromNumber(ssmProjectNumber);
   }
   if (ssmInstance) {
-    gitUri = `${ssmInstance}-git.${ssmRest}/${ssmProject}/${repoName}-git`;
+    gitUri = `${ssmInstance}-git.${ssmRest}/${ssmProject}/${repoName}.git`;
     repoUrl = `${ssmHost}/${ssmProject}/${repoName}`;
   }
   return [gitUri, repoUrl];
