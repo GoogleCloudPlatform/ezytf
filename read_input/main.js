@@ -16,9 +16,6 @@
 
 /*global  process*/
 import * as url from "node:url";
-// import { exec } from "child_process";
-import util from "node:util";
-import child_process from "node:child_process";
 import { modifyResource } from "./resources/custom-map.js";
 import { readSheetRanges } from "./read/google-sheet-read.js";
 import { readMapRange, flatRanges, modifyGeneric } from "./format.js";
@@ -31,12 +28,13 @@ import {
   writeFile,
   inverseObj,
   ssmUri,
-  getCurrentTimeFormatted
+  getCurrentTimeFormatted,
+  runCommand,
+  runCommandSync
 } from "./util.js";
 
 export { main };
 
-const exec = util.promisify(child_process.exec);
 
 const LOCAL_CONFIG_DIR =
   process.env.EZTF_CONFIG_DIR || "../ezytf-gen-data/eztf-config";
@@ -108,7 +106,7 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
     );
   }
   if (outputBucket) {
-    let ezytfTime =  getCurrentTimeFormatted();
+    let ezytfTime = getCurrentTimeFormatted();
     let gcs_prefix = `eztf-output/${repoName}/${repoName}-${ezytfTime}/`;
     output["output_gcs"] = `gs://${outputBucket}/${gcs_prefix}`;
     output["output_gcs_prefix"] = gcs_prefix;
@@ -153,12 +151,12 @@ async function generateTF(
   customer,
   configBucket = "",
   outputBucket = "",
-  outputGcsPrefix = ""
+  outputGcsPrefix = "",
+  asyncGenerate = false
 ) {
   console.log("running cdktf synth");
 
-  const { stdout, stderr } = await exec(
-    `export EZTF_INPUT_CONFIG=${eztfInputConfig} && \
+  let generateScript = `export EZTF_INPUT_CONFIG=${eztfInputConfig} && \
     export EZTF_CDK_OUTPUT_DIR=${customer} && \
     export EZTF_OUTPUT_DIR=${LOCAL_OUTPUT_DIR} && \
     export EZTF_CONFIG_BUCKET=${configBucket} && \
@@ -168,13 +166,14 @@ async function generateTF(
     cd ../generate && \
     
     cdktf synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null && \
-    python -W ignore repo.py`
-  );
-  console.log(`stdout: ${stdout}`);
-  if (stderr) {
-    console.error(`stderr: ${stderr}`);
+    python -W ignore repo.py`;
+
+  if (asyncGenerate) {
+    runCommand(generateScript)
+  } else {
+    return runCommandSync(generateScript)
   }
-  return [stdout, stderr];
+  return [null, null];
 }
 
 async function main(
@@ -184,7 +183,8 @@ async function main(
   generateCode = false,
   configType = "yaml",
   configContent = "",
-  ezytfConfigGcsPath = ""
+  ezytfConfigGcsPath = "",
+  asyncGenerate = false
 ) {
   let eztfConfig;
   let eztfInputConfig;
@@ -213,14 +213,17 @@ async function main(
       repoName,
       configBucket,
       outputBucket,
-      outputGcsPrefix
+      outputGcsPrefix,
+      asyncGenerate
     );
-    outputDetails["log"] = eztfout;
+    if (eztfout) {
+      outputDetails["log"] = eztfout;
+    }
     if (eztferr) {
       outputDetails["generate_error"] = eztferr;
     }
   }
-  delete outputDetails["output_gcs_prefix"]
+  delete outputDetails["output_gcs_prefix"];
   return outputDetails;
 }
 

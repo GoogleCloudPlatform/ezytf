@@ -15,10 +15,11 @@
  */
 
 import { Storage } from "@google-cloud/storage";
-import { ProjectsClient } from '@google-cloud/resource-manager'
+import { ProjectsClient } from "@google-cloud/resource-manager";
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
+import { exec, execSync } from "node:child_process";
 
 export {
   cleanKey,
@@ -46,6 +47,8 @@ export {
   parseConfig,
   ssmUri,
   getCurrentTimeFormatted,
+  runCommand,
+  runCommandSync
 };
 
 function cleanKey(str) {
@@ -379,23 +382,23 @@ function customSort(arr, orderMap) {
 function getCurrentTimeFormatted() {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
 
   return `${year}-${month}-${day}_${hours}-${minutes}`;
 }
 
 async function getProjectIdFromNumber(projectNumber) {
   const client = new ProjectsClient();
-  const formattedName = client.projectPath(projectNumber.toString())
+  const formattedName = client.projectPath(projectNumber.toString());
 
   try {
     const [project] = await client.getProject({ name: formattedName });
     return project.projectId;
   } catch (error) {
-    console.error('Error getting project ID:', error);
+    console.error("Error getting project ID:", error);
     return null;
   }
 }
@@ -404,8 +407,8 @@ async function ssmUri(ssmHost, ssmProject, repoName) {
   let gitUri, ssmInstance, ssmProjectNumber, ssmRest, repoUrl;
   if (ssmHost) {
     ssmInstance = ssmHost.split(".")[0];
-    ssmProjectNumber = ssmInstance.split("-")[1]
-    ssmRest = ssmHost.split('.').slice(1).join('.');
+    ssmProjectNumber = ssmInstance.split("-")[1];
+    ssmRest = ssmHost.split(".").slice(1).join(".");
   }
   if (!ssmProject && ssmProjectNumber) {
     ssmProject = await getProjectIdFromNumber(ssmProjectNumber);
@@ -417,3 +420,35 @@ async function ssmUri(ssmHost, ssmProject, repoName) {
   return [gitUri, repoUrl];
 }
 
+function runCommand(command) {
+  return exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+    }
+    if (stdout) {
+      console.log(`stdout: ${stdout}`);
+    }
+    if (stderr) {
+      console.error(`stderr: ${stderr}`);
+    }
+    return [stdout, stderr];
+  });
+}
+
+function runCommandSync(command) {
+  let stdout, stderr;
+  try{
+    const result = execSync(command);
+    stdout = result.toString()
+  } catch (err){ 
+    stdout = err.stderr.toString()
+    stderr = err.stderr.toString()
+  }
+  if (stdout) {
+    console.log(`stdout: ${stdout}`);
+  }
+  if (stderr) {
+    console.error(`stderr: ${stderr}`);
+  }
+  return [stdout, stderr];
+}

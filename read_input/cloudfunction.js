@@ -29,6 +29,7 @@ functions.http("readInputGenerateTF", async (req, res) => {
     const configType = req.body.configType || "yaml"; // sheet, yaml, json
     const spreadsheetId = req.body.spreadsheetId;
     const generateCode = req.body.generateCode || false;
+    const asyncGenerate = req.body.async || false;
     const configBucket =
       req.body.configBucket || process.env.EZTF_CONFIG_BUCKET || "";
     const outputBucket =
@@ -49,7 +50,8 @@ functions.http("readInputGenerateTF", async (req, res) => {
         generateCode,
         configType,
         configContent,
-        ezytfConfigGcsPath
+        ezytfConfigGcsPath,
+        asyncGenerate
       );
       res.status(200).send(output);
     } else {
