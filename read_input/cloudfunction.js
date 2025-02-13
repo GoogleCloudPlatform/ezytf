@@ -33,11 +33,16 @@ functions.http("readInputGenerateTF", async (req, res) => {
       req.body.configBucket || process.env.EZTF_CONFIG_BUCKET || "";
     const outputBucket =
       req.body.outputBucket || process.env.EZTF_OUTPUT_BUCKET || "";
-
-    console.log(req.body);
+    
+    let requestLog = { ... req.body };
+    if (requestLog.configContent){
+      requestLog.configContentProvided = true
+      delete requestLog.configContent
+    }
+    console.log(requestLog);
 
     if (spreadsheetId || configContent || ezytfConfigGcsPath) {
-      await main(
+      let output = await main(
         spreadsheetId,
         configBucket,
         outputBucket,
@@ -46,16 +51,16 @@ functions.http("readInputGenerateTF", async (req, res) => {
         configContent,
         ezytfConfigGcsPath
       );
+      res.status(200).send(output);
     } else {
       res
         .status(400)
         .send(
-          "Provide either spreadsheetId, configContent or ezytfConfigGcsPath"
+          {"error":"Provide either spreadsheetId, configContent or ezytfConfigGcsPath"}
         );
     }
-    res.status(200).send("config generation started");
   } catch (error) {
     console.error("Error Generating", error);
-    res.status(500).send("Internal server error");
+    res.status(500).send({"error":`Internal server error ${error}`});
   }
 });

@@ -24,6 +24,7 @@ import google.auth.credentials
 import google.oauth2.credentials
 import google.auth.transport.requests
 from google.cloud import storage
+from google.cloud.storage import transfer_manager
 from git import Repo
 import requests
 
@@ -154,23 +155,51 @@ def download_from_gcs(bucket_name, source_blob_name):
     return contents
 
 
-def upload_folder_to_gcs(bucket_name, local_folder, gcs_prefix=""):
-    """Uploads a folder to the bucket recursively."""
-
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-
+def folder_files(local_folder):
+    result = []
     for path, dirs, files in os.walk(local_folder):
         # skip hidden files
         dirs[:] = [d for d in dirs if not d.startswith(".")]
         files = [f for f in files if not f.startswith(".")]
         for name in files:
             local_file = os.path.join(path, name)
-            local_file_path = os.path.relpath(local_file, local_folder)
-            blob_name = os.path.join(gcs_prefix, local_file_path)
-            blob = bucket.blob(blob_name)
-            blob.upload_from_filename(local_file)
-        print(f"Files {','.join(files)} uploaded to gs://{bucket_name}/{gcs_prefix}")
+            folder_file_path = os.path.relpath(local_file, local_folder)
+            result.append((local_file, folder_file_path))
+    return result
+
+
+def upload_folder_to_gcs(bucket_name, local_folder, gcs_prefix=""):
+    """Uploads a folder to the bucket recursively."""
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+
+    for local_file, folder_file_path in folder_files(local_folder):
+        blob_name = os.path.join(gcs_prefix, folder_file_path)
+        blob = bucket.blob(blob_name)
+        blob.upload_from_filename(local_file)
+
+
+def upload_folder_to_gcs_parallel(bucket_name, local_folder, gcs_prefix=""):
+    """Uploads a folder to the bucket parallely."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+
+    gcs_prefix = gcs_prefix.rstrip("/") + "/" if gcs_prefix else ""
+    filenames = [folder_file_path for _, folder_file_path in folder_files(local_folder)]
+
+    results = transfer_manager.upload_many_from_filenames(
+        bucket,
+        filenames,
+        source_directory=local_folder,
+        blob_name_prefix=gcs_prefix,
+    )
+    for name, result in zip(filenames, results):
+        if isinstance(result, Exception):
+            print("Failed to upload {name} due to exception: {result}")
+    print(
+        f"uploaded files in {local_folder.split('/')[-1]} to gs://{bucket_name}/{gcs_prefix}"
+    )
 
 
 def tf_vars_file(variables, output_folder):
@@ -228,7 +257,9 @@ def split_tf_file(input_file, output_folder):
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(tfdata)
         filename = ""
-    print(f"Created files: {','.join(output_files)} in {output_folder}")
+    print(
+        f"Created files: {','.join(output_files)} in {'/'.join(output_folder.split('/')[-2:])}"
+    )
 
 
 def ssm_url_extract(url):
@@ -269,7 +300,7 @@ def ssm_repository(repo_name, ssm_url):
         rep = response.json()
         for repo in rep.get("repositories", []):
             if repo.get("name") == repo_id:
-                print(f"git repo present, skipping creation {repo['uris']['gitHttps']}")
+                # print(f"git repo present, skipping creation {repo['uris']['gitHttps']}")
                 return repo["uris"]["gitHttps"]
         next_page = rep.get("nextPageToken")
         if not next_page:
@@ -288,7 +319,7 @@ def ssm_repository(repo_name, ssm_url):
         created_repo = rep["response"]["uris"]["gitHttps"]
     except KeyError:
         print("create repository failed", rep)
-    print(f"ssm git repo created{created_repo}")
+    print(f"ssm git repo created {created_repo}")
     return created_repo
 
 
@@ -333,13 +364,12 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
     max_tag += 1
     tag = f"0.{max_tag}-auto"
     repo.create_tag(tag)
-    print(f"pushing branch {branch_name} & tag {tag} to {remote_url}")
     origin.push(
         refspec=[f"{branch_name}:{branch_name}", f"{tag}:{tag}"],
         force=True,
         atomic=True,
     )
-    print("Successfully pushed to Remote Git")
+    print(f"Successfully pushed branch {branch_name} & tag {tag} to {remote_url}")
 
 
 def get_env_token():

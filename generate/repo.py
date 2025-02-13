@@ -23,6 +23,7 @@ OUTPUT_BUCKET = os.environ.get("EZTF_OUTPUT_BUCKET")
 LOCAL_OUTPUT_DIR = os.environ.get("EZTF_OUTPUT_DIR") or "../ezytf-gen-data/eztf-output"
 SSM_HOST = os.environ.get("EZTF_SSM_HOST")
 EZTF_MODE = os.environ.get("EZTF_MODE")
+EZTF_OUTPUT_GCS_PREFIX = os.environ.get("EZTF_OUTPUT_GCS_PREFIX")
 CDKTF_OUTPUT_DIR = os.environ.get("EZTF_CDK_OUTPUT_DIR") or "cdktf.out"
 REPO_TEMPLATE_FILE = [
     "../templates/tf_repo/setup_project.sh",
@@ -41,8 +42,11 @@ EX_VAR_ENV = {
 def code_push_remote(repo_name, repo_folder, git_uri):
     """pushed to remote repository/bucket"""
     if OUTPUT_BUCKET:
-        gcs_prefix = f"eztf-output/{repo_name}/{repo_name}-{util.time_str()}"
-        util.upload_folder_to_gcs(OUTPUT_BUCKET, repo_folder, gcs_prefix)
+        gcs_prefix = (
+            EZTF_OUTPUT_GCS_PREFIX
+            or f"eztf-output/{repo_name}/{repo_name}-{util.time_str()}/"
+        )
+        util.upload_folder_to_gcs_parallel(OUTPUT_BUCKET, repo_folder, gcs_prefix)
 
     if SSM_HOST and not git_uri:
         git_uri = util.ssm_repository(repo_name, SSM_HOST)
@@ -154,6 +158,6 @@ if __name__ == "__main__":
     add_setup_scripts(output_folder, variable)
     code_push_remote(repo, output_folder, config_git_uri)
     if EZTF_MODE == "service":
-        print(f"cleaning up {output_folder} and {CDKTF_OUTPUT_DIR}")
+        # print(f"cleaning up {output_folder} and {CDKTF_OUTPUT_DIR}")
         shutil.rmtree(output_folder)
         shutil.rmtree(CDKTF_OUTPUT_DIR)

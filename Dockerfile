@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:slim
+FROM python:3.12-slim
 
 ARG CDKTF_VERSION='0.20.11'
 ARG TF_VERSION='1.10.5'

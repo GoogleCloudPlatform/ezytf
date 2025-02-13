@@ -46,6 +46,7 @@ flowchart LR
 | EZTF_CONFIG_BUCKET | gcs bucket name to store intermediate config                                   | no       |
 | EZTF_OUTPUT_BUCKET | gcs bucket name to store output                                                | no       |
 | EZTF_SSM_HOST      | ssm host `https://[INSTANCE_ID]-[PROJECT_NUMBER].[LOCATION].sourcemanager.dev` | no       |
+| EZTF_SSM_PROJECT   | ssm project id                                                                 | no       |
 | EZTF_MODE          | value:`workflow`/`service` see above diagram for reference                     | no       |
 
 ### API Request body Field
