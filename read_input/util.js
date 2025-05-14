@@ -28,6 +28,7 @@ export {
   rmBracket,
   isValue,
   sepArray,
+  keyValStr,
   sepKeyValPairs,
   lowerObj,
   mergeObjArray,
@@ -38,6 +39,7 @@ export {
   readFromGcsPath,
   nestObject,
   writeFile,
+  readJson,
   inverseObj,
   underscoreRes,
   toBool,
@@ -48,7 +50,7 @@ export {
   ssmUri,
   getCurrentTimeFormatted,
   runCommand,
-  runCommandSync
+  runCommandSync,
 };
 
 function cleanKey(str) {
@@ -78,12 +80,27 @@ function cleanRes(str) {
 
 function trimQuotes(str) {
   if (!str) return str;
-  return str.replace(/^['"]+|['"]+$/g, "");
+  const firstChar = str.charAt(0);
+  const lastChar = str.charAt(str.length - 1);
+  if (
+    (firstChar === '"' && lastChar === '"') ||
+    (firstChar === "'" && lastChar === "'")
+  ) {
+    return str.slice(1, -1);
+  }
+  return str;
+}
+
+function trim(str) {
+  if (!str) return str;
+  return str.trim();
 }
 
 function rmBracket(str, bracket = "()") {
   if (!str) str = "";
   switch (bracket) {
+    case "()$":
+      return str.replace(/\s*\([^()]*\)\s*$/gm, "").trim();
     case "()":
       return str.replace(/\s*\(.*\)/, "").trim();
     case "[]":
@@ -114,6 +131,20 @@ function writeFile(filePath, data) {
     fs.mkdirSync(dir, { recursive: true });
   }
   fs.writeFileSync(filePath, data);
+}
+
+function readJson(filePath) {
+  if (!fs.existsSync(filePath)) {
+    console.error(`File not found: ${filePath}`);
+    return null;
+  }
+  try {
+    const data = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error(`Error reading or parsing JSON file: ${err}`);
+    return null;
+  }
 }
 
 function toNumber(val) {
@@ -147,14 +178,25 @@ function convertType(str) {
   return trimQuotes(str);
 }
 
+function keyValStr(str, sep = ":") {
+  var re = new RegExp(String.raw`(.+?)${sep}(.+)?`);
+  const keyVal = str.match(re);
+  let key, val;
+  if (keyVal) {
+    key = trim(keyVal[1]);
+    val = convertType(trim(keyVal[2]));
+  } else {
+    key = trim(str);
+  }
+  return [key, val];
+}
+
 function sepKeyValPairs(str, sep = ";", forceVal = false, data = {}) {
   if (!str) str = "";
   str = String(str);
-  let strArray = sepArray(rmBracket(str), sep);
+  let strArray = sepArray(rmBracket(str, "()$"), sep);
   strArray.forEach((line) => {
-    let keyVal = sepArray(line, ":");
-    let key = keyVal[0];
-    let val = convertType(keyVal[1]);
+    let [key, val] = keyValStr(line, ":");
     if (forceVal && (val === null || val === undefined)) {
       if (forceVal === "key") {
         val = val || key || "";
@@ -437,12 +479,12 @@ function runCommand(command) {
 
 function runCommandSync(command) {
   let stdout, stderr;
-  try{
+  try {
     const result = execSync(command);
-    stdout = result.toString()
-  } catch (err){ 
-    stdout = err.stderr.toString()
-    stderr = err.stderr.toString()
+    stdout = result.toString();
+  } catch (err) {
+    stdout = err.stderr.toString();
+    stderr = err.stderr.toString();
   }
   if (stdout) {
     console.log(`stdout: ${stdout}`);

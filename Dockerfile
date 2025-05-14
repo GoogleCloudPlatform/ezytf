@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.12-slim
+FROM python:3.13-slim
 
-ARG CDKTF_VERSION='0.20.11'
-ARG TF_VERSION='1.10.5'
-ARG NODE_VERSION="v20.17.0"
+ARG CDKTF_VERSION='0.20.12'
+ARG TF_VERSION='1.11.4'
+ARG NODE_VERSION="v20.19.1"
 
 LABEL name="ezyTF"
 

@@ -24,7 +24,97 @@ export {
   fixIam,
   fixVpnHa,
   fixTunnel,
+  fixJsonYamlMap,
+  fixVariable,
 };
+
+const defaultSetupApis = [
+  "serviceusage.googleapis.com",
+  "cloudresourcemanager.googleapis.com",
+  "cloudbilling.googleapis.com",
+  "iam.googleapis.com",
+  "admin.googleapis.com",
+  "storage-api.googleapis.com",
+  "logging.googleapis.com",
+  "monitoring.googleapis.com",
+  "orgpolicy.googleapis.com",
+  "cloudidentity.googleapis.com",
+]
+
+const defaultSetupRoles = [
+  "roles/resourcemanager.organizationAdmin",
+  "roles/orgpolicy.policyAdmin",
+  "roles/iam.organizationRoleAdmin",
+  "roles/resourcemanager.folderAdmin",
+  "roles/resourcemanager.folderIamAdmin",
+  "roles/resourcemanager.projectCreator",
+  "roles/securitycenter.admin",
+  "roles/compute.networkAdmin",
+  "roles/compute.xpnAdmin",
+  "roles/compute.securityAdmin",
+  "roles/iam.serviceAccountCreator",
+  "roles/logging.admin",
+  "roles/monitoring.admin",
+  "roles/pubsub.admin",
+  "roles/bigquery.admin",
+  "roles/compute.instanceAdmin.v1",
+  "roles/billing.user",
+  "roles/serviceusage.serviceUsageConsumer",
+]
+
+const setupIamResourceMap = {
+  "projects": "$project_id",
+  "resource-manager folders" : "$folder_id",
+  "organizations" : "$organization_id"
+}
+
+
+const varReplaceKey = {
+  eztf_config_name: "ez_config_name",
+  output_git_uri: "ez_repo_git_uri",
+  gcs_bucket: "setup_gcs",
+  gcs_bucket_location: "setup_gcs_location",
+};
+
+function fixVariable(data, rangeName) {
+  if (!data) return data;
+  for (const [key, val] of Object.entries(varReplaceKey)) {
+    if (data.hasOwnProperty(key)) {
+      data[val] = data[key];
+      delete data[key];
+    }
+  }
+  if (rangeName === "variable"){
+    if (!data.setup_roles){
+      data.setup_roles = defaultSetupRoles;
+    }
+    if (!data.setup_apis){
+      data.setup_apis = defaultSetupApis;
+    }
+    if (!data.setup_iam_resource){
+      data.setup_iam_resource = "organizations";
+    }
+  }
+  if (!data.setup_iam_resource){
+    data.setup_iam_resource = "projects";
+  }
+  if (!data.setup_iam_resource_id){
+    data.setup_iam_resource_id = setupIamResourceMap[data.setup_iam_resource] || "";
+  }
+  return data;
+}
+
+function fixJsonYamlMap(data) {
+  if (!data) return data;
+  let dicKey = data._map_key;
+  if (dicKey) {
+    let newData = {};
+    delete data._map_key;
+    newData[dicKey] = data;
+    return newData;
+  }
+  return data;
+}
 
 function fixGroup(data) {
   if (!data) return data;
@@ -35,35 +125,20 @@ function fixGroup(data) {
   return data;
 }
 
-function iamPrincipal(name, type, workforce_pool_id) {
+function iamPrincipal(name, type) {
   name = rmBracket(name);
-  if (type.startsWith("principal")) {
+
+  if (type.startsWith("principal") && name.split("/").length === 3) {
     let prefixWorkforce =
       "//iam.googleapis.com/locations/global/workforcePools";
-    switch (name.split("/").length) {
-      case 1: {
-        let workforce_type = type === "principal" ? "subject" : "group";
-        name = `${workforce_pool_id}/${workforce_type}/${name}`;
-        break;
-      }
-      case 2:
-        name = `${workforce_pool_id}/${name}`;
-        break;
-    }
     name = `${prefixWorkforce}/${name}`;
   }
   return `${type}:${name}`;
 }
 
-function fixIam(data, eztf) {
+function fixIam(data) {
   if (!data) return data;
-  let workforce_pool_id =
-    eztf.eztfConfig["variable"]["workforce_pool_id"] || "";
-  data.principal = iamPrincipal(
-    data.principal,
-    data.principal_type,
-    workforce_pool_id
-  );
+  data.principal = iamPrincipal(data.principal, data.principal_type);
   return data;
 }
 

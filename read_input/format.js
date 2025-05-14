@@ -18,6 +18,7 @@ import {
   lower,
   cleanKey,
   sepArray,
+  keyValStr,
   sepKeyValPairs,
   nestObject,
   rmBracket,
@@ -38,6 +39,7 @@ export {
   readNamedRange,
   setRangeDataByName,
   formatHeaderData,
+  supportedTfstacks,
 };
 
 function readMapRange(eztf, rangeName) {
@@ -45,7 +47,6 @@ function readMapRange(eztf, rangeName) {
   let [headers, rangeValue] = readNamedRange(eztf, rangeName);
   return mapData(eztf, headers, rangeValue, rangeName, resource);
 }
-
 
 function mapData(eztf, headers, values, range, resource) {
   const data = values
@@ -61,7 +62,7 @@ function mapData(eztf, headers, values, range, resource) {
 
       let newObj = mapGeneric(eztf.rangeNoteKey, range, obj);
       if (mapEntry[resource] && !!newObj && Object.keys(newObj).length > 0) {
-        newObj = mapEntry[resource](newObj, eztf);
+        newObj = mapEntry[resource](newObj, range);
       }
       return newObj;
     })
@@ -167,6 +168,21 @@ function flatRanges(tfRanges) {
   return newRange;
 }
 
+function supportedTfstacks(stacks, supportedTf) {
+  let tfstacks = [];
+
+  for (const [subStack, eztfRangeResources] of Object.entries(stacks)) {
+    for (const rangeResource of eztfRangeResources) {
+      for (const resource of Object.values(rangeResource)) {
+        if (supportedTf.has(resource) && !tfstacks.includes(subStack)) {
+          tfstacks.push(subStack);
+        }
+      }
+    }
+  }
+  return tfstacks;
+}
+
 function modifyGeneric(eztf, rangeResource) {
   eztf.eztfConfig[rangeResource] = readMapRange(eztf, rangeResource);
 }
@@ -204,13 +220,21 @@ function deleteEmpty(data, allowEmpty) {
   }
 }
 
+function fillCommon(data, rangeCommonDataObj) {
+  for (const [key, value] of Object.entries(rangeCommonDataObj)) {
+    if (data[key] === undefined || data[key] === null) {
+      data[key] = value;
+    }
+  }
+}
+
 function replaceVariables(input, variables) {
   return input.replace(/{([^}]+)}/g, (match, variableName) => {
     return variables[variableName] || match;
   });
 }
 
-function metadataFunSwitch(metadata, data, key) {
+function metadataFunSwitch(metadata, data, key, rangeHeaderObj) {
   if (metadata === "commaseperated") {
     data[key] = sepArray(data[key]);
   } else if (metadata === "semicolonseperated") {
@@ -242,8 +266,18 @@ function metadataFunSwitch(metadata, data, key) {
     if (key !== newKey) {
       delete data[key];
     }
+  } else if (metadata === "prefix") {
+    let prefix = rangeHeaderObj?.prefix?.[key] || "";
+    data[key] = prefix + data[key];
+  } else if (metadata === "suffix") {
+    let suffix = rangeHeaderObj?.suffix?.[key] || "";
+    data[key] = data[key] + suffix;
   } else if (metadata === "moduleid") {
     data["_eztf_module_id"] = data[key];
+  } else if (metadata === "resourceid") {
+    data["_eztf_resource_id"] = data[key];
+  } else if (metadata === "dataid") {
+    data["_eztf_data_id"] = data[key];
   }
 }
 
@@ -254,15 +288,26 @@ const metadataOrderMap = {
   underscore: 1,
   upper: 1,
   lower: 1,
+  prefix: 1,
+  suffix: 1,
   commaseperated: 2,
   semicolonseperated: 2,
   keyvalpair: 2,
   templatekey: 3,
   dontallowif_: 4,
-  dontkeep: 4,
+  moduleid: 5,
+  resourceid: 5,
+  dataid: 5,
+  dontkeep: 6,
 };
 
-function runMetadataFun(metadataObj, data, skip = [], only = []) {
+function runMetadataFun(
+  metadataObj,
+  data,
+  rangeHeaderObj,
+  skip = [],
+  only = []
+) {
   for (const [key, metadataFun] of Object.entries(metadataObj)) {
     for (const fun of metadataFun) {
       if (
@@ -272,7 +317,7 @@ function runMetadataFun(metadataObj, data, skip = [], only = []) {
       ) {
         continue;
       }
-      metadataFunSwitch(fun, data, key);
+      metadataFunSwitch(fun, data, key, rangeHeaderObj);
     }
   }
 }
@@ -285,11 +330,15 @@ function mapGeneric(rangeNoteKey, rangeResource, data) {
     return {};
   }
   let metadataObj = rangeNoteKey?.[rangeResource]?.metadata || {};
+  let rangeHeaderObj = rangeNoteKey?.[rangeResource] || {};
+  let rangeCommonDataObj = rangeNoteKey?.[rangeResource]?.data || {};
+
   deleteEmpty(data, allowEmptyKeys);
+  fillCommon(data, rangeCommonDataObj);
   // skip dontkeep to preserve templating key data in first iteration
-  runMetadataFun(metadataObj, data, ["dontkeep"], []);
+  runMetadataFun(metadataObj, data, rangeHeaderObj, ["dontkeep"], []);
   // only apply dontkeep if present
-  runMetadataFun(metadataObj, data, [], ["dontkeep"]);
+  runMetadataFun(metadataObj, data, rangeHeaderObj, [], ["dontkeep"]);
   return nestObject(data);
 }
 
@@ -297,23 +346,28 @@ function formatHeaderData(rangeNoteKey, rangeName, header, note) {
   if (!rangeNoteKey[rangeName]) {
     rangeNoteKey[rangeName] = {
       key: {},
+      prefix: {},
+      suffix: {},
       required_keys: [],
       allow_empty_keys: [],
       metadata: {},
-      module: {},
       data: {},
-      resource: {},
+      tf_module: {},
+      tf_data: {},
+      tf_resource: {},
     };
   }
-  let headerKey = cleanKey(header);
+  let defaultHeaderKey = cleanKey(header);
+  let headerKey = defaultHeaderKey;
   let noteHeader = lowerObj(sepKeyValPairs(note), true);
 
-  if (noteHeader["field"]) {
-    rangeNoteKey[rangeName]["key"][headerKey] = noteHeader["field"];
+  if (noteHeader.field) {
+    rangeNoteKey[rangeName]["key"][defaultHeaderKey] = noteHeader["field"];
     headerKey = noteHeader["field"];
   }
+  let keyMetadata = [];
   if (noteHeader.metadata) {
-    let keyMetadata = sepArray(noteHeader["metadata"].toLowerCase());
+    keyMetadata = sepArray(noteHeader["metadata"].toLowerCase());
     if (keyMetadata.includes("required"))
       rangeNoteKey[rangeName]["required_keys"].push(headerKey);
     if (keyMetadata.includes("allowempty"))
@@ -321,21 +375,40 @@ function formatHeaderData(rangeNoteKey, rangeName, header, note) {
     keyMetadata = keyMetadata.filter(
       (val) => !["required", "allowempty"].includes(val)
     );
-    if (keyMetadata.length > 0) {
-      let sortedKeyMatadata = customSort(keyMetadata, metadataOrderMap);
-      rangeNoteKey[rangeName]["metadata"][headerKey] = sortedKeyMatadata;
+  }
+  if (noteHeader.prefix) {
+    rangeNoteKey[rangeName]["prefix"][headerKey] = noteHeader["prefix"];
+    keyMetadata.push("prefix");
+  }
+  if (noteHeader.suffix) {
+    rangeNoteKey[rangeName]["suffix"][headerKey] = noteHeader["suffix"];
+    keyMetadata.push("suffix");
+  }
+  if (keyMetadata.length > 0) {
+    let sortedKeyMetadata = customSort(keyMetadata, metadataOrderMap);
+    rangeNoteKey[rangeName]["metadata"][headerKey] = sortedKeyMetadata;
+  }
+  for (const key in noteHeader) {
+    if (key.startsWith("commonfielddata")) {
+      const [commonField, fieldData] = keyValStr(noteHeader[key], "=");
+      if (commonField) {
+        rangeNoteKey[rangeName]["data"][commonField] = fieldData;
+      }
     }
   }
   if (noteHeader.source) {
-    rangeNoteKey[rangeName]["module"]["source"] = noteHeader["source"];
+    rangeNoteKey[rangeName]["tf_module"]["source"] = noteHeader["source"];
   }
   if (noteHeader.version) {
-    rangeNoteKey[rangeName]["module"]["version"] = noteHeader["version"];
+    rangeNoteKey[rangeName]["tf_module"]["version"] = noteHeader["version"];
   }
-  if (noteHeader.data) {
-    rangeNoteKey[rangeName]["data"]["name"] = noteHeader["data"];
+  if (noteHeader.tf_data) {
+    rangeNoteKey[rangeName]["tf_data"]["name"] = noteHeader["tf_data"];
   }
-  if (noteHeader.resource) {
-    rangeNoteKey[rangeName]["resource"]["name"] = noteHeader["resource"];
+  if (noteHeader.tf_resource) {
+    rangeNoteKey[rangeName]["tf_resource"]["name"] = noteHeader["tf_resource"];
+  }
+  if (noteHeader.format) {
+    rangeNoteKey[rangeName]["format"] = noteHeader["format"].toLowerCase();
   }
 }

@@ -18,7 +18,7 @@
 import * as url from "node:url";
 import { modifyResource } from "./resources/custom-map.js";
 import { readSheetRanges } from "./read/google-sheet-read.js";
-import { readMapRange, flatRanges, modifyGeneric } from "./format.js";
+import { readMapRange, flatRanges, modifyGeneric, supportedTfstacks } from "./format.js";
 import {
   createYaml,
   cleanRes,
@@ -29,19 +29,24 @@ import {
   inverseObj,
   ssmUri,
   getCurrentTimeFormatted,
+  readJson,
   runCommand,
-  runCommandSync
+  runCommandSync,
 } from "./util.js";
 
 export { main };
-
 
 const LOCAL_CONFIG_DIR =
   process.env.EZTF_CONFIG_DIR || "../ezytf-gen-data/eztf-config";
 
 const LOCAL_OUTPUT_DIR =
   process.env.EZTF_OUTPUT_DIR || "../ezytf-gen-data/eztf-output";
+
+const EZTF_SUPPORTED_TF_FILE = "../generate/supported_tf.json";
+
 process.env.CI = 1;
+
+const supportedTf = new Set(readJson(EZTF_SUPPORTED_TF_FILE));
 
 class Eztf {
   constructor() {
@@ -62,8 +67,11 @@ function generateEztfConfig(eztf, tfRanges) {
     tf_any_module: {},
     tf_any_data: {},
     tf_any_resource: {},
+    tf_stacks: []
   };
-  eztf.eztfConfig["eztf"]["stacks"] = flatRanges(tfRanges);
+  let stacks = flatRanges(tfRanges)
+  eztf.eztfConfig["eztf"]["stacks"] = stacks;
+  eztf.eztfConfig["eztf"]["tf_stacks"] = supportedTfstacks(stacks, supportedTf)
 
   for (const stack of Object.values(tfRanges)) {
     for (const rangeResourceObjArray of stack) {
@@ -74,15 +82,15 @@ function generateEztfConfig(eztf, tfRanges) {
       const range = resourceRangeObj[resource];
       if (resource === "any_module" || resource === "mod") {
         eztf.eztfConfig["eztf"]["tf_any_module"][range] =
-          eztf.rangeNoteKey?.[range]?.["module"] || {};
+          eztf.rangeNoteKey?.[range]?.["tf_module"] || {};
       }
       if (resource === "any_data" || resource === "data") {
         eztf.eztfConfig["eztf"]["tf_any_data"][range] =
-          eztf.rangeNoteKey?.[range]?.["data"] || {};
+          eztf.rangeNoteKey?.[range]?.["tf_data"] || {};
       }
       if (resource === "any_resource" || resource === "res") {
         eztf.eztfConfig["eztf"]["tf_any_resource"][range] =
-          eztf.rangeNoteKey?.[range]?.["resource"] || {};
+          eztf.rangeNoteKey?.[range]?.["tf_resource"] || {};
       }
       if (Object.prototype.hasOwnProperty.call(modifyResource, resource)) {
         console.log("Custom Modify: ", Object.values(resourceRangeObj).join());
@@ -96,7 +104,7 @@ function generateEztfConfig(eztf, tfRanges) {
 }
 
 async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
-  let output = {};
+  let output = { error: "" };
   let repoUrl;
   if (!gitUri) {
     [gitUri, repoUrl] = await ssmUri(
@@ -104,6 +112,10 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
       process.env.EZTF_SSM_PROJECT,
       repoName
     );
+  } else if (gitUri.endsWith(".git")){
+    repoUrl = gitUri.slice(0, -4);
+    // remove -git ssm git uri
+    repoUrl = repoUrl.replace(/-git(?=\..+\.sourcemanager\.dev)/, "");
   }
   if (outputBucket) {
     let ezytfTime = getCurrentTimeFormatted();
@@ -121,13 +133,18 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
 }
 
 async function getEzytfConfigDetails(eztfConfig, outputBucket = "") {
-  let configName = eztfConfig["variable"]["eztf_config_name"] || "ezytf";
-  let gitUri = eztfConfig["variable"]["output_git_uri"];
+  let configName = eztfConfig["variable"]["ez_config_name"] || "ezy";
+  let gitUri = eztfConfig["variable"]["ez_repo_git_uri"];
   let customerName = cleanRes(eztfConfig["variable"]["domain"]);
   let repoName = `gcp-${customerName}-${configName}`;
   let fileName = `${configName}/${repoName}.yaml`;
   let output = await getEzytfOutputDetails(repoName, gitUri, outputBucket);
-  return [fileName, repoName, output];
+  let isTfstack = true;
+  if (supportedTf.size > 0){
+    isTfstack = eztfConfig["eztf"]["tf_stacks"].length > 0;
+  }
+  
+  return [fileName, repoName, output, isTfstack];
 }
 
 function writeEztfConfig(eztfConfig, configBucket, fileName) {
@@ -147,16 +164,18 @@ function writeEztfConfig(eztfConfig, configBucket, fileName) {
 }
 
 async function generateTF(
-  eztfInputConfig,
+  eztfInputConfigFile,
   customer,
   configBucket = "",
   outputBucket = "",
   outputGcsPrefix = "",
-  asyncGenerate = false
+  asyncGenerate = false,
+  anyTfStack = true
 ) {
-  console.log("running cdktf synth");
+  console.log("running code generation");
 
-  let generateScript = `export EZTF_INPUT_CONFIG=${eztfInputConfig} && \
+  let generateScript = `export EZTF_INPUT_CONFIG=${eztfInputConfigFile} && \
+    export EZTF_IS_TF=${anyTfStack} && \
     export EZTF_CDK_OUTPUT_DIR=${customer} && \
     export EZTF_OUTPUT_DIR=${LOCAL_OUTPUT_DIR} && \
     export EZTF_CONFIG_BUCKET=${configBucket} && \
@@ -165,13 +184,13 @@ async function generateTF(
     if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE 2>/dev/null ; fi && \
     cd ../generate && \
     
-    cdktf synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null && \
+    if [ "\${EZTF_IS_TF}" = "true" ]; then cdktf synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null ; fi && \
     python -W ignore repo.py`;
-
+  // console.log(generateScript)
   if (asyncGenerate) {
-    runCommand(generateScript)
+    runCommand(generateScript);
   } else {
-    return runCommandSync(generateScript)
+    return runCommandSync(generateScript);
   }
   return [null, null];
 }
@@ -187,7 +206,7 @@ async function main(
   asyncGenerate = false
 ) {
   let eztfConfig;
-  let eztfInputConfig;
+  let eztfInputConfigFile;
   if (spreadsheetId) {
     let eztf = new Eztf();
     const tfRanges = await readSheetRanges(eztf, spreadsheetId);
@@ -201,26 +220,27 @@ async function main(
     let configData = await readFromGcsPath(ezytfConfigGcsPath);
     eztfConfig = parseConfig(configData, configType);
   }
-  let [fileName, repoName, outputDetails] = await getEzytfConfigDetails(
+  let [fileName, repoName, outputDetails, isTfstack] = await getEzytfConfigDetails(
     eztfConfig,
     outputBucket
   );
-  eztfInputConfig = writeEztfConfig(eztfConfig, configBucket, fileName);
+  eztfInputConfigFile = writeEztfConfig(eztfConfig, configBucket, fileName);
   let outputGcsPrefix = outputDetails["output_gcs_prefix"];
   if (generateCode) {
     let [eztfout, eztferr] = await generateTF(
-      eztfInputConfig,
+      eztfInputConfigFile,
       repoName,
       configBucket,
       outputBucket,
       outputGcsPrefix,
-      asyncGenerate
+      asyncGenerate,
+      isTfstack
     );
     if (eztfout) {
       outputDetails["log"] = eztfout;
     }
     if (eztferr) {
-      outputDetails["generate_error"] = eztferr;
+      outputDetails["error"] = eztferr;
     }
   }
   delete outputDetails["output_gcs_prefix"];

@@ -98,6 +98,7 @@ from ._vpcsc import (
     generate_sc_perimeter_bridge,
 )
 from ._certificate import generate_ff_cas, generate_ff_cm
+from ._parallelstore import generate_parallelstore
 from ._any_module import generate_any_module
 from ._any_data import generate_any_data
 from ._any_resource import generate_any_resource
@@ -186,6 +187,7 @@ creation = {
     "res": generate_any_resource,
     "any_data": generate_any_data,
     "data": generate_any_data,
+    "parallelstore": generate_parallelstore,
 }
 
 data_creation = {"google_org": data_google_org}
@@ -222,11 +224,28 @@ class MyStack(TerraformStack):
     ):
         super().__init__(scope, id)
         self.eztf_config = eztf_config
-        self.created = {"vars": {}, "locals": {}, "data": {}, "null": {}}
+        self.created = {
+            "vars": {},
+            "locals": {},
+            "data": {},
+            "resource": {},
+            "null": {},
+        }
         self.added = {}
+        self.tf_vars = {}
+        self.provided_vars = eztf_config.get("variable", {})
+
         self._create_backend(sub_stack_name)
         self.file_seprator_variable("variables", True)
 
+        for range_resource in eztf_range_resources:
+            for my_resource, resource in range_resource.items():
+                if resource == "variable" or resource == "tf_vars":
+                    all_stack_vars = self.eztf_config.get(my_resource,{})
+                    stack_vars = util.dict_without_prefixes(all_stack_vars, ["setup_", "ez_"])
+                    self.provided_vars.update(all_stack_vars)
+                    self._create_variables(stack_vars)
+        
         for range_resource in eztf_range_resources:
             for my_resource, resource in range_resource.items():
                 if not creation.get(resource):
@@ -251,16 +270,14 @@ class MyStack(TerraformStack):
 
     def _create_backend(self, config_sub_type):
         var = self.eztf_config.get("variable", {})
-        GoogleProvider(
-            self,
-            id="google",
-            project=var.get("setup_project_id", ""),
-        )
-        GcsBackend(
-            self,
-            bucket=var.get("gcs_bucket", ""),
-            prefix=f"terraform-{config_sub_type}-state",
-        )
+
+        GoogleProvider(self, id="google", project=var.get("setup_project_id"))
+        if var.get("setup_gcs"):
+            GcsBackend(
+                self,
+                bucket=var.get("setup_gcs"),
+                prefix=f"terraform-{config_sub_type}-state",
+            )
 
     def ensure_data(self, data_li):
         for name in data_li:
@@ -268,18 +285,19 @@ class MyStack(TerraformStack):
                 data_creation[name](self)
 
     def ensure_variables(self, variables):
-        self._create_variables({variable: "" for variable in variables})
+        self._create_variables({variable: self.provided_vars.get(variable,"") for variable in variables})
 
     def _create_variables(self, variables):
         if not self.created.get("vars"):
             self.created["vars"] = {}
-        for variable, _ in variables.items():
+        for variable, value in variables.items():
             if not self.created["vars"].get(variable):
                 self.created["vars"][variable] = TerraformVariable(
                     self,
                     variable,
                     description=" ".join(variable.split("_")),
                 )
+                self.tf_vars[variable] = value
 
     def ref_principal(self, name):
         p = name.split(":")
@@ -287,11 +305,16 @@ class MyStack(TerraformStack):
         ref_p_id = self.tf_ref(p_type.lower(), p_id)
         return f"{p_type}:{ref_p_id}"
 
-    def _re_region_subnet(self, subnet_link):
-        pattern = r"/regions/(.+)/subnetworks/(.+)"
+    def _re_prj_region_subnet(self, subnet_link):
+        pattern = r"projects/(.+)/regions/(.+)/subnetworks/(.+)"
+        sub_li = subnet_link.split("/")
         if match := re.search(pattern, subnet_link):
-            return f"{match.group(1)}/{match.group(2)}"
-        return subnet_link
+            return match.group(1), match.group(2), match.group(3)
+        elif len(sub_li) == 3:
+            return sub_li[0], sub_li[1], sub_li[2]
+        elif len(sub_li) == 2:
+            return None, sub_li[0], sub_li[1]
+        return None, None, None
 
     def update_fabric_iam(self, dic):
         for key, values in dic.get("iam_bindings_additive", {}).items():
@@ -331,9 +354,29 @@ class MyStack(TerraformStack):
             return "folder"
         return "project"
 
+    def resource_function(self, resource: str, nested_params=None, provider=""):
+        res_name = resource
+        if not provider:
+            provider = resource.split("_")[0]
+            res_name = "_".join(resource.split("_")[1:])
+        if nested_params:
+            res_name = "_".join([res_name] + nested_params)
+        method_name = util.pascal_case(res_name)
+        module = __import__(
+            f"cdktf_cdktf_provider_{provider}.{res_name}", fromlist=[res_name]
+        )
+        func = getattr(module, method_name)
+        return func, res_name
+
     def tf_param_list(self, data, key, attribute_object_func):
         if data and data.get(key):
             data[key] = [attribute_object_func(**item) for item in data[key]]
+
+    def tf_parameters_list(self, data, resource, nested_params):
+        attribute_func, _ = self.resource_function(
+            resource, nested_params, provider="google"
+        )
+        self.tf_param_list(self, data, nested_params[-1], attribute_func)
 
     # fmt: off
     def tf_ref(self, res_type, name, default=sentinel):
@@ -377,9 +420,13 @@ class MyStack(TerraformStack):
         elif res_type == "folder_id" and self.created.get("folders", {}).get(name):
             refname = self.created["folders"][name].folder_id
         elif res_type == "subnet":
-            region_subnet = self._re_region_subnet(name)
+            prj, region, subnet = self._re_prj_region_subnet(name)
+            region_subnet = f"{region}/{subnet}"
             if vpc_name := self.added.get("subnets", {}).get(region_subnet):
                 refname = f'${{module.nw_{vpc_name}.subnets["{region_subnet}"].self_link}}'
+            elif region and subnet:
+                prj = prj or '${var.nw_project_id}'
+                refname = f"projects/{prj}/regions/{region}/subnetworks/{subnet}"
         elif res_type == "vpn_ha" and name in self.added.get("vpn_ha", set()):
             refname = f"${{module.vpn_ha_{name}.self_link}}"
         elif res_type == "external_vpn_gateway" and self.created.get("external_vpn_gateway", {}).get(name):
@@ -406,5 +453,13 @@ class MyStack(TerraformStack):
             refname = self.created["wif_pool"][name].workforce_pool_id
         if res_type == "wi_pool" and self.created.get("wi_pool", {}).get(name):
             refname = self.created["wi_pool"][name].workload_identity_pool_id
+        if res_type == "cx" and self.created.get("cx", {}).get(name):
+            refname = self.created["cx"][name].id
+        if res_type == "datastore" and self.created.get("datastore", {}).get(name):
+            refname = self.created["datastore"][name].data_store_id
+        if res_type == "ai_index" and self.created.get("ai_index", {}).get(name):
+            refname = self.created["ai_index"][name].id
+        if res_type == "ai_index_endpoint" and self.created.get("ai_index_endpoint", {}).get(name):
+            refname = self.created["ai_index_endpoint"][name].id
         return refname
     # fmt: on

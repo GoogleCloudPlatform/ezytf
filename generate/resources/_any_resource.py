@@ -12,23 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# from cdktf_cdktf_provider_google.google_compute_network import GoogleComputeNetwork
+# from cdktf_cdktf_provider_google.compute_network import ComputeNetwork
 import util
-
-
-def resource_function(name: str):
-    provider = name.split("_")[0]
-    method_name = util.pascal_case(name)
-    module = __import__(f"cdktf_cdktf_provider_{provider}.{name}")
-    func = getattr(module, method_name)
-    return func
 
 
 def create_any_resource(self, resource_name: str, res: dict):
     resource_id = res.get("_eztf_resource_id", util.random_str(n=5))
     del res["_eztf_resource_id"]
-    func = resource_function(resource_name)
-    self.created["resource"][resource_name][resource_id] = func(self, **res)
+    func, res_name = self.resource_function(resource_name)
+    if res.get("project"):
+        res["project"] = self.tf_ref("project", res["project"])
+    formatted_res = util.nested_list_keys_to_camel(res)
+    self.created["resource"][resource_name][resource_id] = func(
+        self, id_=f"{res_name}_{resource_id}", **formatted_res
+    )
 
 
 def generate_any_resource(self, my_resource, resource):
@@ -36,5 +33,11 @@ def generate_any_resource(self, my_resource, resource):
     resource_details = (
         self.eztf_config.get("eztf", {}).get("tf_any_resource", {}).get(my_resource, {})
     )
+    resource_name = resource_details.get("name")
+    if not resource_name:
+        return
+    self.created["resource"][resource_name] = self.created["resource"].get(
+        resource_name, {}
+    )
     for res in self.eztf_config.get(my_resource, []):
-        create_any_resource(self, resource_details.get("name"), res)
+        create_any_resource(self, resource_name, res)

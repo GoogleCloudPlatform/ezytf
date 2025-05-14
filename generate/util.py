@@ -19,6 +19,9 @@ import re
 from datetime import datetime
 import yaml
 import json
+import shlex
+import shutil
+import urllib.parse
 import google.auth
 import google.auth.credentials
 import google.oauth2.credentials
@@ -27,6 +30,7 @@ from google.cloud import storage
 from google.cloud.storage import transfer_manager
 from git import Repo
 import requests
+import jinja2
 
 RANDOM_WORD = "gcp-cdk-tf-id_"
 TF_SINGLE_OUT = "cdktf.out/stacks/{stack_name}/cdk.tf"
@@ -44,6 +48,8 @@ continent_short_name = {
 DIR_REGEX = r"(n)orth|(s)outh|(e)ast|(w)est|(c)entral"
 DIR_SUBS = "\\1\\2\\3\\4\\5"
 
+jinja_env = jinja2.Environment()
+
 
 def cdktf_output(stack_name, output_folder="cdktf.out"):
     return f"{output_folder}/stacks/{stack_name}/cdk.tf"
@@ -60,6 +66,18 @@ def clean_res_id(name):
     """returns resource id name lowercase and hypen"""
     return name.lower().replace(".", "-").replace("_", "-")
 
+_find_unsafe = re.compile(r'[^\w@$%+=:,./-]', re.ASCII).search
+
+def shell_quote(s):
+    """Return a shell-escaped version of the string *s*."""
+    if isinstance(s, bool):
+        return "true" if s else "false"
+    s = str(s)
+    if not s:
+        return "''"
+    if _find_unsafe(s) is None:
+        return s
+    return "'" + s.replace("'", "'\"'\"'") + "'"
 
 def lower(name):
     """return lower case name replaces with underscore"""
@@ -104,6 +122,67 @@ def pascal_case(name: str):
     return name.replace("_", " ").title().replace(" ", "")
 
 
+def camel_case(snake_str):
+    components = snake_str.split("_")
+    return components[0] + "".join(x.title() for x in components[1:])
+
+
+def str_list(item, sep=","):
+    if isinstance(item, list):
+        return sep.join(item)
+    elif isinstance(item, str):
+        return sep.join([i.strip() for i in item.split(sep) if i.strip()])
+    return item
+
+
+def dict_without_prefixes(data_dict, prefix_li, skip_keys=[]):
+    new_dict = {}
+    for key, value in data_dict.items():
+        if key in skip_keys:
+            continue
+        skip_prefix = False
+        for prefix in prefix_li:
+            if key.startswith(prefix):
+                skip_prefix = True
+                break
+        if not skip_prefix:
+            new_dict[key] = value
+    return new_dict
+
+
+def nested_list_keys_to_camel(data):
+    def process_item(item, in_list=False):
+        if isinstance(item, dict):
+            new_item = {}
+            for key, value in item.items():
+                if in_list:
+                    new_key = camel_case(key)
+                else:
+                    new_key = key
+                new_item[new_key] = process_item(value, in_list)
+            return new_item
+        elif isinstance(item, list):
+            return [process_item(v, True) for v in item]
+        else:
+            return item
+
+    if not isinstance(data, dict):
+        return data
+
+    result = process_item(data)
+    return result
+
+
+def eztf_filename(name, extension, default, count=0):
+    filename = name
+    if not name:
+        file_suffix = "" if count == 0 else "_" + str(count)
+        filename = default + file_suffix
+    if extension and not filename.endswith(f".{extension}"):
+        filename += f".{extension}"
+    return filename
+
+
 def get_file_yaml(filename):
     "returns yaml as dict"
     with open(filename, "r", encoding="utf-8") as fp:
@@ -111,25 +190,54 @@ def get_file_yaml(filename):
     return yaml_dict
 
 
-def write_file_yaml(filename, dict_data):
+def write_file_yaml(filename, data):
     "creates yaml file"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w", encoding="utf-8") as fp:
-        yaml.safe_dump(dict_data, fp, sort_keys=False, default_flow_style=False)
+        yaml.safe_dump(data, fp, sort_keys=False, default_flow_style=False)
 
 
-def write_file_json(filename, dict_data):
+def write_file_json(filename, data):
     "creates json file"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w", encoding="utf-8") as fp:
-        json.dump(dict_data, fp, indent=4, sort_keys=False)
+        json.dump(data, fp, indent=4, sort_keys=False)
 
 
-def write_file_any(filename, content):
-    "creates json file"
+def write_file_jsonl(filename, data):
+    "creates jsonl file"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w", encoding="utf-8") as fp:
+        for item in data:
+            json.dump(item, fp)
+            fp.write("\n")
+
+
+def write_file_any(filename, content, jinja_vars=None, mode="w"):
+    "creates any file"
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    if jinja_vars and len(jinja_vars) > 0:
+        template = jinja_env.from_string(content)
+        content = template.render(jinja_vars)
+    with open(filename, mode, encoding="utf-8") as fp:
         fp.write(content)
+
+
+def write_or_append_file(
+    source_file, destination_file, jinja_vars=None, force_write=False
+):
+    with open(source_file, "r", encoding="utf-8") as fp:
+        content = fp.read()
+    mode = "w"
+    if os.path.exists(destination_file) and not force_write:
+        mode = "a"
+        content = "\n\n" + content
+    write_file_any(destination_file, content, jinja_vars, mode)
+
+
+def delete_folders(folder_li):
+    for folder in folder_li:
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
@@ -202,6 +310,45 @@ def upload_folder_to_gcs_parallel(bucket_name, local_folder, gcs_prefix=""):
     )
 
 
+def _to_hcl_value(value, indent_level=0, indent_spaces=2):
+    """
+    Converts a Python value to its HCL string representation for .tfvars.
+    """
+    current_indent = " " * (indent_level * indent_spaces)
+    next_indent = " " * ((indent_level + 1) * indent_spaces)
+
+    if isinstance(value, str):
+        escaped_value = json.dumps(value)[1:-1]
+        return f'"{escaped_value}"'
+    elif isinstance(value, (int, float, bool)):
+        return str(value).lower()
+    elif value is None:
+        return "null"
+    elif isinstance(value, (list, tuple)):
+        if not value:
+            return "[]"
+        items_hcl = [
+            f"{next_indent}{_to_hcl_value(item, indent_level + 1, indent_spaces)}"
+            for item in value
+        ]
+        return f"[\n{',\n'.join(items_hcl)},\n{current_indent}]"
+    elif isinstance(value, dict):
+        if not value:
+            return "{}"
+        pairs_hcl = []
+        for k, v_item in value.items():
+            key_hcl = f'"{k}"' if "-" in str(k) else str(k)
+            val_hcl = _to_hcl_value(v_item, indent_level + 1, indent_spaces)
+            pairs_hcl.append(f"{next_indent}{key_hcl} = {val_hcl}")
+        return f"{{\n{'\n'.join(pairs_hcl)}\n{current_indent}}}"
+    else:
+        escaped_fallback = json.dumps(json.dumps(value)[1:-1])
+        print(
+            f"Warning: Unsupported type {type(value)} for HCL conversion. Representing as an escaped string: {value}"
+        )
+        return escaped_fallback
+
+
 def tf_vars_file(variables, output_folder):
     """
     Creates a tfvars file from a dictionary of variables.
@@ -213,12 +360,15 @@ def tf_vars_file(variables, output_folder):
     """
     os.makedirs(output_folder, exist_ok=True)
     output_file = os.path.join(output_folder, "terraform.tfvars")
+    tfvars_lines = []
+    for key, value in variables.items():
+        hcl_value_str = _to_hcl_value(value, indent_level=0, indent_spaces=2)
+        tfvars_lines.append(f"{key} = {hcl_value_str}")
+
+    tfvars_content = "\n\n".join(tfvars_lines) + "\n"
+
     with open(output_file, "w", encoding="utf-8") as f:
-        for key, value in variables.items():
-            if isinstance(value, str):
-                f.write(f'{key} = "{value}"\n')
-            else:
-                f.write(f"{key} = {value}\n")
+        f.write(tfvars_content)
 
 
 def split_tf_file(input_file, output_folder):
@@ -370,6 +520,169 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
         atomic=True,
     )
     print(f"Successfully pushed branch {branch_name} & tag {tag} to {remote_url}")
+
+
+def quote_shell_variable(str):
+    return re.sub(r"(\$\{[^}]+\}|\$\([^)]+\))", r"'\1'", str)
+
+
+def bash_str(value):
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def python_to_bash_vars(vars, export=False):
+    """
+    Generates Bash variable declaration code from a dict / key,val tuple of list of Python variables.
+    Args:
+        vars (dict/list): A dictionary where keys are the desired Bash variable
+                          names (str) and values are the Python variables
+                          (str, int, bool, list, or dict).
+
+    Returns:
+        str: The generated Bash code as a single string.
+    """
+    bash_commands = []
+    export_str = "export " if export else ""
+    var_list = []
+    if isinstance(vars, dict):
+        var_list = list(vars.items())
+    elif isinstance(vars, list):
+        var_list = vars
+
+    for name, value in var_list:
+        if not name or not name.isidentifier() or name[0].isdigit():
+            print(f"Invalid variable: '{name}'. Must start with letter or underscore")
+            continue
+
+        if isinstance(value, (str, int, bool, float)):
+            bash_commands.append(f"{export_str}{name}={shell_quote(value)}")
+
+        elif isinstance(value, list):
+            val = ""
+            if export:
+                val = ",".join(value)
+            else:
+                # Indexed array assignment: my_array=( "item 1" "item 2" ... )
+                val = f"( {' '.join([shell_quote(item) for item in value])} )"
+            bash_commands.append(f"{export_str}{name}={val}")
+
+        elif isinstance(value, dict):
+            # Associative array assignment (Bash 4.0+): declare -A my_assoc=( [key1]="val1" [key2]="val2" ... )
+            # Note: Both keys and values are converted to strings and quoted.
+            items_str = []
+            for k, v in value.items():
+                items_str.append(
+                    f"[{shlex.quote(bash_str(k))}]={shell_quote(v)}"
+                )
+            bash_commands.append(f"declare -A {name}=({' '.join(items_str)})")
+        else:
+            print(f"Unsupported '{name}': {type(value)}. Only str, list, dict are supported")
+
+    output_string = "\n".join(bash_commands)
+    return output_string
+
+
+def generate_command(cmd, options, vars):
+    command = cmd
+    vars_cmd = ""
+    if vars:
+        vars_cmd = python_to_bash_vars(vars) + "\n\n"
+    for key, value in options.items():
+        option_val = f"={value}" if value else ""
+        command.append(f"--{key}{option_val}")
+    command_str = " ".join(command)
+    return vars_cmd + command_str
+
+
+def generate_curl_command(
+    url="",
+    method="GET",
+    params=None,
+    headers=None,
+    data=None,
+    json_data=None,
+    options=None,
+    vars=None,
+    **kwargs,
+):
+    """
+    Generates a cURL command string with proper shell quoting.
+
+    Args:
+        url (str): The target URL.
+        method (str, optional): HTTP method (GET, POST, PUT, DELETE, etc.).
+                                Defaults to 'GET'.
+        headers (dict, optional): Dictionary of request headers
+                                  (e.g., {'Content-Type': 'application/json'}).
+                                  Defaults to None.
+        params (dict, optional): Dictionary of query parameters to be appended
+                                 to the URL (e.g., {'search': 'query', 'page': 2}).
+                                 Keys and values will be URL-encoded.
+                                 Defaults to None.
+        data (str, optional): Request body data as a raw string. Used with '-d'.
+                              Defaults to None.
+        json_data (dict, optional): Request body data as a Python dictionary.
+                                    Will be automatically JSON serialized.
+                                    Sets 'Content-Type: application/json' header
+                                    if not already present. Takes precedence over 'data'.
+                                    Defaults to None.
+        options (list, optional): List of additional raw cURL options/flags
+                                   (e.g., ['-v', '-L', '-k', '--http1.1']).
+                                   Defaults to None.
+
+    Returns:
+        str: The generated cURL command string.
+    """
+    if not json_data:
+        json_data = kwargs.get("json")
+
+    command_parts = []
+    vars_cmd = ""
+    if vars:
+        vars_cmd = python_to_bash_vars(vars) + "\n\n"
+
+    initial_parts = ["curl"]
+
+    # Use this to pass flags like -v, -L, -k, -i, -o, -A etc.
+    if options:
+        initial_parts.append(" ".join(options))
+
+    processed_method = method.upper()
+    initial_parts.append("-X " + processed_method)
+
+    command_parts.append(" ".join(initial_parts))
+
+    final_headers = headers.copy() if headers else {}
+
+    if json_data is not None and "Content-Type" not in final_headers:
+        final_headers["Content-Type"] = "application/json"
+
+    if final_headers:
+        for key, value in final_headers.items():
+            header_str = f"{key}: {value}"
+            command_parts.append("-H " + f'"{header_str}"')
+
+    final_url = url
+    if params:
+        query_string = urllib.parse.urlencode(params, doseq=True)
+        final_url = f"{url}?{query_string}"
+
+    command_parts.append(f'"{final_url}"')
+
+    # --- Data Payload ---
+    payload = None
+    if json_data is not None:
+        payload = json.dumps(json_data, indent=2)
+    elif data is not None:
+        payload = data
+
+    if payload is not None:
+        payload = shlex.quote(payload)
+        command_parts.append("-d " + quote_shell_variable(payload))
+
+    return vars_cmd + " \\ \n".join(command_parts)
 
 
 def get_env_token():

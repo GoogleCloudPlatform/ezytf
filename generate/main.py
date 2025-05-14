@@ -39,9 +39,7 @@ def run_cdktf(config):
         stack_name = f"gcp-{util.clean_res_id(domain)}-{sub_stack}"
         eztf_config = copy.deepcopy(config)
         app_stack = MyStack(app, stack_name, eztf_config, sub_stack, range_resources)
-        provided_vars = eztf_config.get("variable", {})
-        for var in app_stack.created["vars"].keys():
-            config["eztf"]["tf_vars"][sub_stack][var] = provided_vars.get(var, "")
+        config["eztf"]["tf_vars"][sub_stack] = app_stack.tf_vars
 
     return config
 

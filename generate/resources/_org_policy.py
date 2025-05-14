@@ -24,6 +24,8 @@ import util
 
 def create_org_policy(self, org_policy):
     node_type = org_policy["policy_root"]
+    if node_type == "folder":
+        node_type = "folder_id"
     node = org_policy.get("policy_root_id", "org")
     name = org_policy["constraint"]
     org_policy["policy_root_id"] = self.tf_ref(node_type, node)
