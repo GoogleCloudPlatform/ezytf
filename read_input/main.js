@@ -18,7 +18,13 @@
 import * as url from "node:url";
 import { modifyResource } from "./resources/custom-map.js";
 import { readSheetRanges } from "./read/google-sheet-read.js";
-import { readMapRange, flatRanges, modifyGeneric, supportedTfstacks } from "./format.js";
+import {
+  readMapRange,
+  flatRanges,
+  modifyGeneric,
+  supportedTfstacks,
+  changeResourceType,
+} from "./format.js";
 import {
   createYaml,
   cleanRes,
@@ -67,11 +73,12 @@ function generateEztfConfig(eztf, tfRanges) {
     tf_any_module: {},
     tf_any_data: {},
     tf_any_resource: {},
-    tf_stacks: []
+    tf_stacks: [],
+    stacks: {}
   };
-  let stacks = flatRanges(tfRanges)
+  let stacks = flatRanges(tfRanges);
   eztf.eztfConfig["eztf"]["stacks"] = stacks;
-  eztf.eztfConfig["eztf"]["tf_stacks"] = supportedTfstacks(stacks, supportedTf)
+  eztf.eztfConfig["eztf"]["tf_stacks"] = supportedTfstacks(stacks, supportedTf);
 
   for (const stack of Object.values(tfRanges)) {
     for (const rangeResourceObjArray of stack) {
@@ -101,6 +108,7 @@ function generateEztfConfig(eztf, tfRanges) {
       }
     }
   }
+  changeResourceType(eztf.eztfConfig["eztf"]["stacks"]);
 }
 
 async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
@@ -112,7 +120,7 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
       process.env.EZTF_SSM_PROJECT,
       repoName
     );
-  } else if (gitUri.endsWith(".git")){
+  } else if (gitUri.endsWith(".git")) {
     repoUrl = gitUri.slice(0, -4);
     // remove -git ssm git uri
     repoUrl = repoUrl.replace(/-git(?=\..+\.sourcemanager\.dev)/, "");
@@ -140,10 +148,10 @@ async function getEzytfConfigDetails(eztfConfig, outputBucket = "") {
   let fileName = `${configName}/${repoName}.yaml`;
   let output = await getEzytfOutputDetails(repoName, gitUri, outputBucket);
   let isTfstack = true;
-  if (supportedTf.size > 0){
+  if (supportedTf.size > 0) {
     isTfstack = eztfConfig["eztf"]["tf_stacks"].length > 0;
   }
-  
+
   return [fileName, repoName, output, isTfstack];
 }
 
@@ -220,10 +228,9 @@ async function main(
     let configData = await readFromGcsPath(ezytfConfigGcsPath);
     eztfConfig = parseConfig(configData, configType);
   }
-  let [fileName, repoName, outputDetails, isTfstack] = await getEzytfConfigDetails(
-    eztfConfig,
-    outputBucket
-  );
+  let [fileName, repoName, outputDetails, isTfstack] =
+    await getEzytfConfigDetails(eztfConfig, outputBucket);
+  
   eztfInputConfigFile = writeEztfConfig(eztfConfig, configBucket, fileName);
   let outputGcsPrefix = outputDetails["output_gcs_prefix"];
   if (generateCode) {

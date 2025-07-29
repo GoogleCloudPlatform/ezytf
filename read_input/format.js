@@ -28,7 +28,7 @@ import {
   toNumber,
   customSort,
 } from "./util.js";
-import { mapEntry } from "./resources/custom-map.js";
+import { mapEntry, changeResource } from "./resources/custom-map.js";
 
 export {
   flatRanges,
@@ -40,6 +40,7 @@ export {
   setRangeDataByName,
   formatHeaderData,
   supportedTfstacks,
+  changeResourceType
 };
 
 function readMapRange(eztf, rangeName) {
@@ -168,6 +169,19 @@ function flatRanges(tfRanges) {
   return newRange;
 }
 
+function changeResourceType(stacks) {
+  for (let stack in stacks) {
+    for (let rangeResource of stacks[stack]) {
+      for (let range in rangeResource) {
+        let resource = rangeResource[range]
+        if (Object.prototype.hasOwnProperty.call(changeResource, resource)) {
+          rangeResource[range] = changeResource[resource];
+        }
+      }
+    }
+  }
+}
+
 function supportedTfstacks(stacks, supportedTf) {
   let tfstacks = [];
 
@@ -197,6 +211,17 @@ function getRangeSpecificKeys(rangeNoteKey, rangeResource, key) {
     return [];
   }
   return rangeNoteKey[rangeResource][key];
+}
+
+function checkSelected(data) {
+  if (data.hasOwnProperty("_ez_select")) {
+    let selected = data["_ez_select"];
+    delete data["_ez_select"];
+    if (selected === false || selected === "") {
+      return false;
+    }
+  }
+  return true;
 }
 
 function checkRequired(data, requiredKeys) {
@@ -272,6 +297,11 @@ function metadataFunSwitch(metadata, data, key, rangeHeaderObj) {
   } else if (metadata === "suffix") {
     let suffix = rangeHeaderObj?.suffix?.[key] || "";
     data[key] = data[key] + suffix;
+  } else if (metadata === "copy") {
+    let copyField = rangeHeaderObj?.copy?.[key] || [];
+    for (const newField of copyField) {
+      data[newField] = data[key];
+    }
   } else if (metadata === "moduleid") {
     data["_eztf_module_id"] = data[key];
   } else if (metadata === "resourceid") {
@@ -290,14 +320,15 @@ const metadataOrderMap = {
   lower: 1,
   prefix: 1,
   suffix: 1,
-  commaseperated: 2,
-  semicolonseperated: 2,
-  keyvalpair: 2,
-  templatekey: 3,
-  dontallowif_: 4,
-  moduleid: 5,
-  resourceid: 5,
-  dataid: 5,
+  copy: 2,
+  moduleid: 2,
+  resourceid: 2,
+  dataid: 2,
+  commaseperated: 3,
+  semicolonseperated: 3,
+  keyvalpair: 3,
+  templatekey: 4,
+  dontallowif_: 5,
   dontkeep: 6,
 };
 
@@ -323,6 +354,10 @@ function runMetadataFun(
 }
 
 function mapGeneric(rangeNoteKey, rangeResource, data) {
+  if (!checkSelected(data)) {
+    return {};
+  }
+
   const requiredKeys = rangeNoteKey?.[rangeResource]?.required_keys || [];
   const allowEmptyKeys = rangeNoteKey?.[rangeResource]?.allow_empty_keys || [];
 
@@ -348,6 +383,7 @@ function formatHeaderData(rangeNoteKey, rangeName, header, note) {
       key: {},
       prefix: {},
       suffix: {},
+      copy: {},
       required_keys: [],
       allow_empty_keys: [],
       metadata: {},
@@ -383,6 +419,10 @@ function formatHeaderData(rangeNoteKey, rangeName, header, note) {
   if (noteHeader.suffix) {
     rangeNoteKey[rangeName]["suffix"][headerKey] = noteHeader["suffix"];
     keyMetadata.push("suffix");
+  }
+  if (noteHeader.copytofield) {
+    rangeNoteKey[rangeName]["copy"][headerKey] = sepArray(noteHeader["copytofield"]);
+    keyMetadata.push("copy");
   }
   if (keyMetadata.length > 0) {
     let sortedKeyMetadata = customSort(keyMetadata, metadataOrderMap);

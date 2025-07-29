@@ -14,11 +14,11 @@
 
 FROM python:3.13-slim
 
-ARG CDKTF_VERSION='0.20.12'
-ARG TF_VERSION='1.11.4'
+ARG CDKTF_VERSION='0.21.00'
+ARG TF_VERSION='1.12.2'
 ARG NODE_VERSION="v20.19.1"
 
-LABEL name="ezyTF"
+LABEL name="ezy"
 
 RUN groupadd --gid 1000 ez && useradd --uid 1000 --gid ez --shell /bin/bash --create-home ez
 

@@ -134,8 +134,7 @@ def curl_creator(repo_folder, config, range, resource, stack_name):
         filename = ""
         content = []
         if isinstance(my_item, dict):
-            filename = my_item.get("eztf_filename", "")
-            my_item.pop("eztf_filename", None)
+            filename = my_item.pop("eztf_filename", "")
             content.append(util.generate_curl_command(**my_item))
         elif isinstance(my_item, list):
             for cmd in my_item:

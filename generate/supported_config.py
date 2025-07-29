@@ -1,5 +1,8 @@
 import json
 import requests
+import time
+
+SLEEP_SECONDS = 1
 
 def supported_tf_json():
     from resources import creation
@@ -23,6 +26,7 @@ def get_latest_github_release(owner_repo):
 def git_repo_release(repos_dic):
     result = {}
     for source, owner_repo in repos_dic.items():
+        time.sleep(SLEEP_SECONDS)
         latest_tag = get_latest_github_release(owner_repo)
         print(f"--- Latest Release for {owner_repo} --- {latest_tag}")
         result[source] = latest_tag
@@ -66,6 +70,6 @@ def cdktf_json_repo():
 
 
 if __name__ == "__main__":
-    # supported_tf_json()
+    supported_tf_json()
     cdktf_json_repo()
 

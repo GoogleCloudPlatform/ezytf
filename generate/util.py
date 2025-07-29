@@ -675,12 +675,12 @@ def generate_curl_command(
     payload = None
     if json_data is not None:
         payload = json.dumps(json_data, indent=2)
+        payload = quote_shell_variable(payload)
     elif data is not None:
         payload = data
 
     if payload is not None:
-        payload = shlex.quote(payload)
-        command_parts.append("-d " + quote_shell_variable(payload))
+        command_parts.append(f"-d '{payload}'")
 
     return vars_cmd + " \\ \n".join(command_parts)
 

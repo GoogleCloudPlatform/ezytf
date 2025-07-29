@@ -51,6 +51,8 @@ export {
   getCurrentTimeFormatted,
   runCommand,
   runCommandSync,
+  rpShellVar,
+  pascalCase,
 };
 
 function cleanKey(str) {
@@ -76,6 +78,13 @@ function rpSpaces(str) {
 function cleanRes(str) {
   if (!str) str = "";
   return str.trim().replace(/\./g, "-").replace(/_/g, "-").toLowerCase();
+}
+
+// replaces $[varName] to '${varName}'
+function rpShellVar(str) {
+  str = str.replace(/(\$\{[^\}]+\}|\$\([^\)]+\))/gm, `'$1'`);
+  str = str.replace(/"\$\[([^\]]+)\]"/gm, `'$\{$1\}'`);
+  return str;
 }
 
 function trimQuotes(str) {
@@ -114,6 +123,13 @@ function rmBracket(str, bracket = "()") {
 
 function isValue(str, value) {
   return lower(str) === value ? true : false;
+}
+
+function pascalCase(name) {
+  return name
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .replace(/ /g, "");
 }
 
 function sepArray(str, sep = ",") {

@@ -21,7 +21,7 @@ import * as cus from "./custom-fix.js";
 import * as db from "./database.js";
 import * as file from "./files.js";
 import { mapTfRanges } from "../format.js";
-export { mapEntry, modifyResource };
+export { mapEntry, modifyResource, changeResource };
 
 const mapEntry = {
   tfgenerate: mapTfRanges,
@@ -41,6 +41,7 @@ const mapEntry = {
   yaml: cus.fixJsonYamlMap,
   json: cus.fixJsonYamlMap,
   variable: cus.fixVariable,
+  asconnector: cus.fixAgentspaceConnector,
 };
 
 const modifyResource = {
@@ -65,4 +66,8 @@ const modifyResource = {
   json: file.modifyJsonYaml,
   curl: file.modifyCurl,
   variable: file.modifyVariable,
+};
+
+const changeResource = {
+  asconnector: "curl",
 };
