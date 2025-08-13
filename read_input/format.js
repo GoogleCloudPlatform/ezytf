@@ -40,7 +40,7 @@ export {
   setRangeDataByName,
   formatHeaderData,
   supportedTfstacks,
-  changeResourceType
+  changeResourceType,
 };
 
 function readMapRange(eztf, rangeName) {
@@ -173,7 +173,7 @@ function changeResourceType(stacks) {
   for (let stack in stacks) {
     for (let rangeResource of stacks[stack]) {
       for (let range in rangeResource) {
-        let resource = rangeResource[range]
+        let resource = rangeResource[range];
         if (Object.prototype.hasOwnProperty.call(changeResource, resource)) {
           rangeResource[range] = changeResource[resource];
         }
@@ -242,6 +242,16 @@ function deleteEmpty(data, allowEmpty) {
         delete data[key];
       }
     }
+  }
+}
+
+function fillMultiple(data) {
+  if (data._ezy_multiple) {
+    let multiple = sepKeyValPairs(data._ezy_multiple);
+    for (const [key, value] of Object.entries(multiple)) {
+      data[key] = value;
+    }
+    delete data._ezy_multiple;
   }
 }
 
@@ -370,6 +380,7 @@ function mapGeneric(rangeNoteKey, rangeResource, data) {
 
   deleteEmpty(data, allowEmptyKeys);
   fillCommon(data, rangeCommonDataObj);
+  fillMultiple(data);
   // skip dontkeep to preserve templating key data in first iteration
   runMetadataFun(metadataObj, data, rangeHeaderObj, ["dontkeep"], []);
   // only apply dontkeep if present
@@ -421,7 +432,9 @@ function formatHeaderData(rangeNoteKey, rangeName, header, note) {
     keyMetadata.push("suffix");
   }
   if (noteHeader.copytofield) {
-    rangeNoteKey[rangeName]["copy"][headerKey] = sepArray(noteHeader["copytofield"]);
+    rangeNoteKey[rangeName]["copy"][headerKey] = sepArray(
+      noteHeader["copytofield"]
+    );
     keyMetadata.push("copy");
   }
   if (keyMetadata.length > 0) {
