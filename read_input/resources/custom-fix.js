@@ -294,11 +294,20 @@ function fixAgentspaceConnector(data) {
   let connectorSource = connectorBody.dataSource;
 
   for (const param in data["auth_params"]) {
-    let entParamVal = data["auth_params"][param] || "";
+    let authParamVal = data["auth_params"][param] || "";
     let authKeyName = pascalCase(connectorSource.split("_")[0] + "_" + param);
-    bodyVars[authKeyName] = entParamVal;
+    bodyVars[authKeyName] = authParamVal;
     data["auth_params"][param] = `$\{${authKeyName}\}`;
   }
+  
+  var actionParam = connectorBody?.actionConfig?.actionParams || {};
+  for (const param in actionParam) {
+    let actParamVal = actionParam[param] || "";
+    let actKeyName = pascalCase("Ac_"+ connectorSource.split("_")[0] + "_" + param);
+    bodyVars[actKeyName] = actParamVal;
+    actionParam[param] = `$\{${actKeyName}\}`;
+  }
+
   connectorBody.params = connectorBody.params || {};
   connectorBody.entities = Object.values(entities);
   let connectorParams = connectorBody.params;
@@ -329,6 +338,7 @@ function fixAgentspaceConnector(data) {
     "exclusion_filters",
     "inclusion_filters",
     "entity_params",
+    "action_params",
     "json",
   ]) {
     delete data[key];
