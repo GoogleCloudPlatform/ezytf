@@ -283,8 +283,15 @@ function fixAgentspaceConnector(data) {
     }
   }
 
-  data.json.dataConnector = data.json.dataConnector || {};
-  let connectorSource = data.json.dataConnector.dataSource;
+  if (data.method === "POST") {
+    data.json.dataConnector = data.json.dataConnector || {};
+    var connectorBody = data.json.dataConnector;
+  } else {
+    data.json = data.json || {};
+    var connectorBody = data.json || {};
+  }
+  
+  let connectorSource = connectorBody.dataSource;
 
   for (const param in data["auth_params"]) {
     let entParamVal = data["auth_params"][param] || "";
@@ -292,9 +299,9 @@ function fixAgentspaceConnector(data) {
     bodyVars[authKeyName] = entParamVal;
     data["auth_params"][param] = `$\{${authKeyName}\}`;
   }
-  data.json.dataConnector.params = data.json.dataConnector.params || {};
-  data.json.dataConnector.entities = Object.values(entities);
-  let connectorParams = data.json.dataConnector.params;
+  connectorBody.params = connectorBody.params || {};
+  connectorBody.entities = Object.values(entities);
+  let connectorParams = connectorBody.params;
 
   for (const paramType of ["auth_params", "connector_params"]) {
     connectorParams = { ...connectorParams, ...data[paramType] };
@@ -305,7 +312,7 @@ function fixAgentspaceConnector(data) {
       delete connectorParams[k];
     }
   }
-  data.json.dataConnector.params = connectorParams;
+  connectorBody.params = connectorParams;
   data.vars = { ...data.vars, ...bodyVars };
 
   // console.log(JSON.stringify(data, null, 2))
@@ -330,8 +337,8 @@ function fixAgentspaceConnector(data) {
   return data;
 }
 
-// PATCH 
-// update_mask=entities.params 
+// PATCH
+// update_mask=entities.params
 // refreshInterval
 // params
 // autoRunDisabled
@@ -344,7 +351,6 @@ function fixAgentspaceConnector(data) {
 // incrementalSyncDisabled
 // incrementalRefreshInterval
 // https://cloud.google.com/generative-ai-app-builder/docs/reference/rest/v1alpha/projects.locations.collections/updateDataConnector#query-parameters
-
 
 // for (const ent in entities) {
 //   if (ent.startsWith(`${entityKey}.`) || entities[entityKey]) {}

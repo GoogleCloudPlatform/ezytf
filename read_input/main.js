@@ -78,7 +78,6 @@ function generateEztfConfig(eztf, tfRanges) {
   };
   let stacks = flatRanges(tfRanges);
   eztf.eztfConfig["eztf"]["stacks"] = stacks;
-  eztf.eztfConfig["eztf"]["tf_stacks"] = supportedTfstacks(stacks, supportedTf);
 
   for (const stack of Object.values(tfRanges)) {
     for (const rangeResourceObjArray of stack) {
@@ -228,6 +227,7 @@ async function main(
     let configData = await readFromGcsPath(ezytfConfigGcsPath);
     eztfConfig = parseConfig(configData, configType);
   }
+  eztfConfig["eztf"]["tf_stacks"] = supportedTfstacks(eztfConfig["eztf"]["stacks"], supportedTf);
   let [fileName, repoName, outputDetails, isTfstack] =
     await getEzytfConfigDetails(eztfConfig, outputBucket);
   

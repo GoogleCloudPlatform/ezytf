@@ -164,22 +164,22 @@
     {
       "name": "instance_from_template",
       "source": "terraform-google-modules/vm/google//modules/compute_instance",
-      "version": "~> 13.4.1"
+      "version": "~> 13.4.2"
     },
     {
       "name": "instance_template",
       "source": "terraform-google-modules/vm/google//modules/instance_template",
-      "version": "~> 13.4.1"
+      "version": "~> 13.4.2"
     },
     {
       "name": "mig",
       "source": "terraform-google-modules/vm/google//modules/mig",
-      "version": "~> 13.4.1"
+      "version": "~> 13.4.2"
     },
     {
       "name": "umig",
       "source": "terraform-google-modules/vm/google//modules/umig",
-      "version": "~> 13.4.1"
+      "version": "~> 13.4.2"
     },
     {
       "name": "bigquery",
