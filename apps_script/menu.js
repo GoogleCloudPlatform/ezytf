@@ -25,7 +25,8 @@ function invokeEzyTf() {
   const cloudRunUrl = scriptProperties.getProperty("EZTF_CLOUDRUN_URL");
 
   SpreadsheetApp.getActiveSpreadsheet().addEditor(ezytfServiceAccount);
-  invokeTfGeneration(invokeServiceAccount, cloudRunUrl, true);
+  let ezytfResponse = invokeTfGeneration(invokeServiceAccount, cloudRunUrl, true);
+  EzytfSheet.writeRange(Object.entries(ezytfResponse), "_EzytfResponse");
 }
 
 function listFoldersProjects() {

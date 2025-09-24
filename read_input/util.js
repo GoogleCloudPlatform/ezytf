@@ -15,9 +15,11 @@
  */
 
 import { Storage } from "@google-cloud/storage";
+import { ProjectsClient } from "@google-cloud/resource-manager";
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
+import { exec, execSync } from "node:child_process";
 
 export {
   cleanKey,
@@ -26,55 +28,92 @@ export {
   rmBracket,
   isValue,
   sepArray,
+  keyValStr,
   sepKeyValPairs,
   lowerObj,
   mergeObjArray,
   mergeAddon,
+  readYaml,
   createYaml,
   uploadToGcs,
+  readFromGcsPath,
   nestObject,
   writeFile,
+  readJson,
   inverseObj,
   underscoreRes,
   toBool,
   toNumber,
   groupAddon,
   customSort,
+  parseConfig,
+  ssmUri,
+  getCurrentTimeFormatted,
+  runCommand,
+  runCommandSync,
+  rpShellVar,
+  pascalCase,
 };
 
+  // If value is null or undefined, use an empty string (""), otherwise use the value.
+  // str = String(str ?? "")
+
 function cleanKey(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return lower(sepArray(str, ":").join("."));
 }
 
 function lower(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return rpSpaces(rmBracket(str)).toLowerCase();
 }
 
 function underscoreRes(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return str.trim().replace(/\./g, "_").replace(/-/g, "_").toLowerCase();
 }
 
 function rpSpaces(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return str.trim().replace(/\s+/g, "_");
 }
 
 function cleanRes(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return str.trim().replace(/\./g, "-").replace(/_/g, "-").toLowerCase();
+}
+
+// replaces $[varName] to '${varName}'
+function rpShellVar(str) {
+  str = String(str ?? "")
+  str = str.replace(/(\$\{[^\}]+\}|\$\([^\)]+\))/gm, `'$1'`);
+  str = str.replace(/"\$\[([^\]]+)\]"/gm, `'$\{$1\}'`);
+  return str;
 }
 
 function trimQuotes(str) {
   if (!str) return str;
-  return str.replace(/^['"]+|['"]+$/g, "");
+  const firstChar = str.charAt(0);
+  const lastChar = str.charAt(str.length - 1);
+  if (
+    (firstChar === '"' && lastChar === '"') ||
+    (firstChar === "'" && lastChar === "'")
+  ) {
+    return str.slice(1, -1);
+  }
+  return str;
+}
+
+function trim(str) {
+  if (!str) return str;
+  return str.trim();
 }
 
 function rmBracket(str, bracket = "()") {
-  if (!str) str = "";
+  str = String(str ?? "")
   switch (bracket) {
+    case "()$":
+      return str.replace(/\s*\([^()]*\)\s*$/gm, "").trim();
     case "()":
       return str.replace(/\s*\(.*\)/, "").trim();
     case "[]":
@@ -90,8 +129,16 @@ function isValue(str, value) {
   return lower(str) === value ? true : false;
 }
 
+function pascalCase(name) {
+  name = String(name ?? "")
+  return name
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .replace(/ /g, "");
+}
+
 function sepArray(str, sep = ",") {
-  if (!str) str = "";
+  str = String(str ?? "")
   str = String(str);
   return str
     .split(sep)
@@ -105,6 +152,20 @@ function writeFile(filePath, data) {
     fs.mkdirSync(dir, { recursive: true });
   }
   fs.writeFileSync(filePath, data);
+}
+
+function readJson(filePath) {
+  if (!fs.existsSync(filePath)) {
+    console.error(`File not found: ${filePath}`);
+    return null;
+  }
+  try {
+    const data = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error(`Error reading or parsing JSON file: ${err}`);
+    return null;
+  }
 }
 
 function toNumber(val) {
@@ -138,14 +199,24 @@ function convertType(str) {
   return trimQuotes(str);
 }
 
+function keyValStr(str, sep = ":") {
+  var re = new RegExp(String.raw`(.+?)${sep}(.+)?`);
+  const keyVal = str.match(re);
+  let key, val;
+  if (keyVal) {
+    key = trim(keyVal[1]);
+    val = convertType(trim(keyVal[2]));
+  } else {
+    key = trim(str);
+  }
+  return [key, val];
+}
+
 function sepKeyValPairs(str, sep = ";", forceVal = false, data = {}) {
-  if (!str) str = "";
-  str = String(str);
-  let strArray = sepArray(rmBracket(str), sep);
+  str = String(str ?? "")
+  let strArray = sepArray(rmBracket(str, "()$"), sep);
   strArray.forEach((line) => {
-    let keyVal = sepArray(line, ":");
-    let key = keyVal[0];
-    let val = convertType(keyVal[1]);
+    let [key, val] = keyValStr(line, ":");
     if (forceVal && (val === null || val === undefined)) {
       if (forceVal === "key") {
         val = val || key || "";
@@ -235,18 +306,56 @@ function createYaml(data) {
   return yamlString;
 }
 
+function readYaml(data) {
+  const yamlData = yaml.load(data);
+  return yamlData;
+}
+
+function parseConfig(configData, configType) {
+  // Attempt to parse if it's valid yaml/json
+  let parsedData;
+  if (configType === "yaml") {
+    parsedData = readYaml(configData);
+  } else if (configType === "json") {
+    parsedData = JSON.parse(configData);
+  }
+  return parsedData;
+}
+
 async function uploadToGcs(bucket_name, object_name, contents) {
   const storage = new Storage();
   try {
-    await storage
-      .bucket(bucket_name)
-      .file(object_name)
-      .save(contents);
+    await storage.bucket(bucket_name).file(object_name).save(contents);
     console.log(
       `Successfully pushed file ${object_name} to GCS bucket ${bucket_name}`
     );
   } catch (error) {
     console.log("Failed to push file to GCS bucket: " + error);
+  }
+}
+
+async function readFromGCS(bucketName, fileName) {
+  const storage = new Storage();
+  const bucket = storage.bucket(bucketName);
+  const file = bucket.file(fileName);
+
+  try {
+    const [contents] = await file.download();
+    return contents.toString(); // Convert Buffer to string
+  } catch (error) {
+    console.error(`Error reading file from GCS: ${error}`);
+    return null; // Or throw the error, depending on your needs
+  }
+}
+
+async function readFromGcsPath(gcsPath) {
+  const match = gcsPath.match(/gs:\/\/([^/]+)\/(.+)/);
+  if (match) {
+    const bucketName = match[1];
+    const objectPath = match[2];
+    return await readFromGCS(bucketName, objectPath);
+  } else {
+    return null;
   }
 }
 
@@ -330,4 +439,78 @@ function customSort(arr, orderMap) {
     }
   });
   return arr;
+}
+
+function getCurrentTimeFormatted() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}_${hours}-${minutes}`;
+}
+
+async function getProjectIdFromNumber(projectNumber) {
+  const client = new ProjectsClient();
+  const formattedName = client.projectPath(projectNumber.toString());
+
+  try {
+    const [project] = await client.getProject({ name: formattedName });
+    return project.projectId;
+  } catch (error) {
+    console.error("Error getting project ID:", error);
+    return null;
+  }
+}
+
+async function ssmUri(ssmHost, ssmProject, repoName) {
+  let gitUri, ssmInstance, ssmProjectNumber, ssmRest, repoUrl;
+  if (ssmHost) {
+    ssmInstance = ssmHost.split(".")[0];
+    ssmProjectNumber = ssmInstance.split("-")[1];
+    ssmRest = ssmHost.split(".").slice(1).join(".");
+  }
+  if (!ssmProject && ssmProjectNumber) {
+    ssmProject = await getProjectIdFromNumber(ssmProjectNumber);
+  }
+  if (ssmInstance) {
+    gitUri = `${ssmInstance}-git.${ssmRest}/${ssmProject}/${repoName}.git`;
+    repoUrl = `${ssmHost}/${ssmProject}/${repoName}`;
+  }
+  return [gitUri, repoUrl];
+}
+
+function runCommand(command) {
+  return exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+    }
+    if (stdout) {
+      console.log(`stdout: ${stdout}`);
+    }
+    if (stderr) {
+      console.error(`stderr: ${stderr}`);
+    }
+    return [stdout, stderr];
+  });
+}
+
+function runCommandSync(command) {
+  let stdout, stderr;
+  try {
+    const result = execSync(command);
+    stdout = result.toString();
+  } catch (err) {
+    stdout = err.stderr.toString();
+    stderr = err.stderr.toString();
+  }
+  if (stdout) {
+    console.log(`stdout: ${stdout}`);
+  }
+  if (stderr) {
+    console.error(`stderr: ${stderr}`);
+  }
+  return [stdout, stderr];
 }

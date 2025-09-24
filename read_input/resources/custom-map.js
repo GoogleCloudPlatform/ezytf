@@ -19,8 +19,9 @@ import * as gke from "./gke.js";
 import * as sc from "./vpc-sc.js";
 import * as cus from "./custom-fix.js";
 import * as db from "./database.js";
+import * as file from "./files.js";
 import { mapTfRanges } from "../format.js";
-export { mapEntry, modifyResource };
+export { mapEntry, modifyResource, changeResource };
 
 const mapEntry = {
   tfgenerate: mapTfRanges,
@@ -37,6 +38,10 @@ const mapEntry = {
   mysql: db.fixCloudSql,
   mysql_replica: db.fixCloudSql,
   mssql: db.fixCloudSql,
+  yaml: cus.fixJsonYamlMap,
+  json: cus.fixJsonYamlMap,
+  variable: cus.fixVariable,
+  asconnector: cus.fixAgentspaceConnector,
 };
 
 const modifyResource = {
@@ -57,4 +62,12 @@ const modifyResource = {
   pgsql_replica: db.modifyPgsql,
   mysql: db.modifyMysql,
   mysql_replica: db.modifyMysql,
+  yaml: file.modifyJsonYaml,
+  json: file.modifyJsonYaml,
+  curl: file.modifyCurl,
+  variable: file.modifyVariable,
+};
+
+const changeResource = {
+  asconnector: "curl",
 };

@@ -286,8 +286,12 @@ function fixSubnet(data) {
   if (!data.subnet_name || !data.subnet_ip || !data.subnet_region) {
     return {};
   }
-  if (lower(data.subnet_private_access) === "on")
+  let pga = lower(data.subnet_private_access)
+  if (pga === "on"){
     data.subnet_private_access = true;
+  } else if (pga === "off") {
+    data.subnet_private_access = false;
+  }
   if (lower(data.subnet_flow_logs) === "on") {
     data.subnet_flow_logs = true;
     data.subnet_flow_logs_sampling = data.subnet_flow_logs_sampling || "0.5";

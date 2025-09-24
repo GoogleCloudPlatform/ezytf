@@ -113,3 +113,34 @@ function clearContentColumn(rangeTitle, rowLength) {
   clearRange = range.getSheet().getRange(wRow, wCol, rowLength, 1);
   clearRange.clearContent();
 }
+
+function hideAllSheetsExcept(sheetsToKeepVisible) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = ss.getSheets();
+
+  allSheets.forEach(sheet => {
+    const sheetName = sheet.getName();
+    if (!sheetsToKeepVisible.includes(sheetName)) {
+      try {
+        sheet.hideSheet();
+      } catch (e) {
+        Logger.log(`Could not hide sheet: "${sheetName}". Error: ${e}`);
+      }
+    }
+  });
+}
+
+function showAllSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = ss.getSheets();
+
+  allSheets.forEach(sheet => {
+    if (sheet.isSheetHidden()) {
+      try {
+        sheet.showSheet();
+      } catch (e) {
+        Logger.log(`Could not show sheet: "${sheet.getName()}". Error: ${e}`);
+      }
+    }
+  });
+}

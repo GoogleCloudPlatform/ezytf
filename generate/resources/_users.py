@@ -17,8 +17,8 @@ from cdktf import TerraformLocal, Fn
 from cdktf_cdktf_provider_google.data_google_service_account_access_token import (
     DataGoogleServiceAccountAccessToken,
 )
-from cdktf_cdktf_provider_googleworkspace.provider import GoogleworkspaceProvider
-from cdktf_cdktf_provider_googleworkspace.user import User
+from imports.googleworkspace.provider import GoogleworkspaceProvider
+from imports.googleworkspace.user import User
 import util
 
 
@@ -48,7 +48,7 @@ def init_workspace_provider(self, users):
     GoogleworkspaceProvider(
         self,
         id="googleworkspace",
-        customer_id=self.created["data"]["google_org"].directory_customer_id,
+        customer_id=self.tf_ref("customer_id", ""),
         access_token=sa_token_access.access_token,
     )
 

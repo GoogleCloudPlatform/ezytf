@@ -61,3 +61,7 @@ def generate_iam(self, my_resource, resource):
     for node, principal_roles in self.eztf_config.get(my_resource, {}).items():
         for principal, roles in principal_roles.items():
             create_iam_members(self, node, principal, roles)
+
+def generate_iam_member(self, my_resource, resource):
+    for iam in self.eztf_config.get(my_resource, {}).items():
+        create_iam_members(self, iam.get("node"), iam.get("principal"), iam.get("roles"))

@@ -18,6 +18,7 @@ from imports.logpubsub import Logpubsub
 from imports.logstorage import Logstorage
 from imports.logproject import Logproject
 from imports.logbigquery import Logbigquery
+from imports.ff_logging_bucket import FfLoggingBucket
 
 
 log_destination_fn = {
@@ -156,3 +157,27 @@ def add_dest_sink_map(self, my_resource, resource):
         dest_uri = logsink["destination_uri"]
         dest_id = f"{log_dest_type}-{dest_uri}"
         self.added["log_destination"][dest_id] = sink_name
+
+
+# Fabric
+
+
+def create_ff_logbucket(self, logbucket):
+    """creates fabric logbucket module"""
+    logbucket_id = logbucket["id"]
+    logbucket["parent"] = self.tf_ref(logbucket["parent_type"], logbucket["parent"])
+
+    for _, view in logbucket.get("views", {}).items():
+        self.update_fabric_iam(view)
+
+    FfLoggingBucket(
+        self,
+        logbucket_id,
+        **logbucket,
+    )
+
+
+def generate_ff_logbucket(self, my_resource, resource):
+    "creates fabric logbucket module" ""
+    for logbucket in self.eztf_config.get(my_resource, []):
+        create_ff_logbucket(self, logbucket)

@@ -1,6 +1,8 @@
 {
-  "language": "python",
   "app": "python main.py",
+  "codeMakerOutput": "imports",
+  "context": {},
+  "language": "python",
   "projectId": "0eb0d22d-a32d-4bb1-b84f-8ea1010233ae",
   "sendCrashReports": "false",
   "terraformModules": [
@@ -12,175 +14,268 @@
     {
       "name": "project-factory",
       "source": "terraform-google-modules/project-factory/google",
-      "version": "~> 17.0.0"
+      "version": "~> 18.1.0"
     },
     {
       "name": "project_services",
       "source": "terraform-google-modules/project-factory/google//modules/project_services",
-      "version": "~> 17.0.0"
+      "version": "~> 18.1.0"
     },
     {
       "name": "network",
       "source": "terraform-google-modules/network/google",
-      "version": "~> 9.3.0"
+      "version": "~> 12.0.0"
+    },
+    {
+      "name": "fabric_net_svpc_access",
+      "source": "terraform-google-modules/network/google//modules/fabric-net-svpc-access",
+      "version": "~> 12.0.0"
     },
     {
       "name": "network_peering",
       "source": "terraform-google-modules/network/google//modules/network-peering",
-      "version": "~> 9.3.0"
+      "version": "~> 12.0.0"
     },
     {
       "name": "firewall_rules",
       "source": "terraform-google-modules/network/google//modules/firewall-rules",
-      "version": "~> 9.3.0"
+      "version": "~> 12.0.0"
     },
     {
       "name": "firewall_policy_rh",
       "source": "terraform-google-modules/network/google//modules/hierarchical-firewall-policy",
-      "version": "~> 9.3.0"
+      "version": "~> 12.0.0"
     },
     {
       "name": "firewall_policy_nw",
       "source": "terraform-google-modules/network/google//modules/network-firewall-policy",
-      "version": "~> 9.3.0"
+      "version": "~> 12.0.0"
     },
     {
       "name": "log_export",
       "source": "terraform-google-modules/log-export/google",
-      "version": "~> 10.0.0"
+      "version": "~> 11.1.0"
     },
     {
       "name": "logbucket",
       "source": "terraform-google-modules/log-export/google//modules/logbucket",
-      "version": "~> 10.0.0"
+      "version": "~> 11.1.0"
     },
     {
       "name": "logpubsub",
       "source": "terraform-google-modules/log-export/google//modules/pubsub",
-      "version": "~> 10.0.0"
+      "version": "~> 11.1.0"
     },
     {
       "name": "logstorage",
       "source": "terraform-google-modules/log-export/google//modules/storage",
-      "version": "~> 10.0.0"
+      "version": "~> 11.1.0"
     },
     {
       "name": "logproject",
       "source": "terraform-google-modules/log-export/google//modules/project",
-      "version": "~> 10.0.0"
+      "version": "~> 11.1.0"
     },
     {
       "name": "logbigquery",
       "source": "terraform-google-modules/log-export/google//modules/bigquery",
-      "version": "~> 10.0.0"
+      "version": "~> 11.1.0"
     },
     {
       "name": "org_policy_v2",
       "source": "terraform-google-modules/org-policy/google//modules/org_policy_v2",
-      "version": "~> 5.4.0"
+      "version": "~> 7.2.0"
     },
     {
       "name": "cloud-router",
       "source": "terraform-google-modules/cloud-router/google",
-      "version": "~> 6.1.0"
+      "version": "~> 7.3.0"
     },
     {
       "name": "vpn",
       "source": "terraform-google-modules/vpn/google",
-      "version": "~> v4.1.0"
+      "version": "~> 6.1.0"
     },
     {
       "name": "vpn_ha",
       "source": "terraform-google-modules/vpn/google//modules/vpn_ha",
-      "version": "~> v4.1.0"
+      "version": "~> 6.1.0"
     },
     {
       "name": "gke",
       "source": "terraform-google-modules/kubernetes-engine/google",
-      "version": "~> v33.1.0"
+      "version": "~> 40.0.0"
     },
     {
       "name": "gke_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-private-cluster",
-      "version": "~> v33.1.0"
+      "version": "~> 40.0.0"
     },
     {
       "name": "gke_autopilot",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-public-cluster",
-      "version": "~> v33.1.0"
+      "version": "~> 40.0.0"
     },
     {
       "name": "gke_autopilot_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-private-cluster",
-      "version": "~> v33.1.0"
+      "version": "~> 40.0.0"
     },
     {
       "name": "sc_access_level",
       "source": "terraform-google-modules/vpc-service-controls/google//modules/access_level",
-      "version": "~> v6.2.0"
+      "version": "~> 7.2.0"
     },
     {
       "name": "sc_perimeter_bridge",
       "source": "terraform-google-modules/vpc-service-controls/google//modules/bridge_service_perimeter",
-      "version": "~> v6.2.0"
+      "version": "~> 7.2.0"
     },
     {
       "name": "sc_perimeter",
       "source": "terraform-google-modules/vpc-service-controls/google//modules/regular_service_perimeter",
-      "version": "~> v6.2.0"
+      "version": "~> 7.2.0"
     },
     {
       "name": "kms",
       "source": "terraform-google-modules/kms/google",
-      "version": "~> v3.2.0"
+      "version": "~> 4.1.0"
     },
     {
       "name": "pgsql",
       "source": "terraform-google-modules/sql-db/google//modules/postgresql",
-      "version": "~> v23.0.0"
+      "version": "~> 26.2.0"
     },
     {
       "name": "mysql",
       "source": "terraform-google-modules/sql-db/google//modules/mysql",
-      "version": "~> v23.0.0"
+      "version": "~> 26.2.0"
     },
     {
       "name": "mssql",
       "source": "terraform-google-modules/sql-db/google//modules/mssql",
-      "version": "~> v23.0.0"
+      "version": "~> 26.2.0"
     },
     {
       "name": "psa",
       "source": "terraform-google-modules/sql-db/google//modules/private_service_access",
-      "version": "~> v23.0.0"
+      "version": "~> 26.2.0"
     },
     {
       "name": "instance_from_template",
       "source": "terraform-google-modules/vm/google//modules/compute_instance",
-      "version": "~> v12.1.0"
+      "version": "~> 13.6.0"
     },
     {
       "name": "instance_template",
       "source": "terraform-google-modules/vm/google//modules/instance_template",
-      "version": "~> v12.1.0"
+      "version": "~> 13.6.0"
     },
     {
       "name": "mig",
       "source": "terraform-google-modules/vm/google//modules/mig",
-      "version": "~> v12.1.0"
+      "version": "~> 13.6.0"
     },
     {
       "name": "umig",
       "source": "terraform-google-modules/vm/google//modules/umig",
-      "version": "~> v12.1.0"
+      "version": "~> 13.6.0"
     },
     {
       "name": "bigquery",
       "source": "terraform-google-modules/bigquery/google",
-      "version": "~> v8.1.0"
+      "version": "~> 10.2.0"
+    },
+    {
+      "name": "ff_cloud-identity-group",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/cloud-identity-group"
+    },
+    {
+      "name": "ff_organization",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/organization"
+    },
+    {
+      "name": "ff_iam-service-account",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/iam-service-account"
+    },
+    {
+      "name": "ff_gcs",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/gcs"
+    },
+    {
+      "name": "ff_folder",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder"
+    },
+    {
+      "name": "ff_project",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project"
+    },
+    {
+      "name": "ff_net-vpc",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc"
+    },
+    {
+      "name": "ff_net-vpc-firewall",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall"
+    },
+    {
+      "name": "ff_bigquery-dataset",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/bigquery-dataset"
+    },
+    {
+      "name": "ff_logging-bucket",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/logging-bucket"
+    },
+    {
+      "name": "ff_pubsub",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/pubsub"
+    },
+    {
+      "name": "ff_net-swp",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-swp"
+    },
+    {
+      "name": "ff_dns",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns"
+    },
+    {
+      "name": "ff_dns-response-policy",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy"
+    },
+    {
+      "name": "ff_net-firewall-policy",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy"
+    },
+    {
+      "name": "ff_net-address",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-address"
+    },
+    {
+      "name": "ff_net-cloudnat",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat"
+    },
+    {
+      "name": "ff_compute-vm",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/compute-vm"
+    },
+    {
+      "name": "ff_net-vpn-ha",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha"
+    },
+    {
+      "name": "ff_kms",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/kms"
+    },
+    {
+      "name": "ff_certificate-authority-service",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/certificate-authority-service"
+    },
+    {
+      "name": "ff_certificate-manager",
+      "source": "git::https://git@github.com/GoogleCloudPlatform/cloud-foundation-fabric.git//modules/certificate-manager"
     }
   ],
-  "codeMakerOutput": "imports",
-  "context": {
-  }
+  "terraformProviders": [
+    "hashicorp/googleworkspace@~> 0.7"
+  ]
 }

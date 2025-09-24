@@ -4,13 +4,15 @@ Effortlessly generate Google Cloud Terraform configurations using Google Sheets 
 Modular, Customizable and Scalable TF Generation by design.
 
 ### Google Sheet
+
 Make a copy of this [Google Sheet](https://docs.google.com/spreadsheets/d/1cvjTM4QiovZVsnrQYRvSAxD6dmru5UZ8384sycsFsRE/edit?usp=sharing), follow details in instruction tab
 
 ### Architecture Diagram
+
 ezytf can be deployed in either service or workflow mode.
 
-
 #### Workflow
+
 ```mermaid
 flowchart LR
     Sheet("`fa:fa-table Google Sheet`")
@@ -20,20 +22,21 @@ flowchart LR
     Output[("`Generated Code<br> fa:fa-file-code *ssm repo/fa:fa-bucket gcs*`")]
     Sheet --> |App scripts <br> Trigger| Read --> Yaml  -. cloud workflow <br> trigger.-> Generate --> Output
 ```
+
 #### Service
+
 ```mermaid
 flowchart LR
     Sheet("`fa:fa-table Google Sheet`")
     Read("`Read Input`")
     Generate("`Generate`")
     Output[("`Generated Code<br> fa:fa-file-code *ssm repo/fa:fa-bucket gcs*`")]
-    Sheet --> |App scripts <br> Trigger| Read 
+    Sheet --> |App scripts <br> Trigger| Read
     subgraph service [Cloud Run Service fa:fa-code]
     Read --> Generate
     end
     Generate --> Output
 ```
-
 
 ### Environment Variables
 
@@ -46,9 +49,26 @@ flowchart LR
 | EZTF_CONFIG_BUCKET | gcs bucket name to store intermediate config                                   | no       |
 | EZTF_OUTPUT_BUCKET | gcs bucket name to store output                                                | no       |
 | EZTF_SSM_HOST      | ssm host `https://[INSTANCE_ID]-[PROJECT_NUMBER].[LOCATION].sourcemanager.dev` | no       |
+| EZTF_SSM_PROJECT   | ssm project id                                                                 | no       |
 | EZTF_MODE          | value:`workflow`/`service` see above diagram for reference                     | no       |
 
+### API Request body Field
+
+provide either spreadsheetId or configContent or ezytfConfigGcsPath
+
+| Variable           | Description                                               | Required |
+| ------------------ | --------------------------------------------------------- | -------- |
+| spreadsheetId      | google sheet ID                                           | no       |
+| ezytfConfigGcsPath | ezytf config stored in gcs format gs://BUCKET/OBJECT_PATH | no       |
+| configContent      | config data                                               | no       |
+| configType         | yaml/json, default: yaml                                  | no       |
+| generateCode       | true/false default: false                                 | no       |
+| asyncGenerate      | api response async, true/false default: false             | no       |
+| configBucket       | gcs bucket name to store ezytf config                     | no       |
+| outputBucket       | gcs bucket name to store code output                      | no       |
+
 ### Install Dependencies
+
 ```
 cd read_input && npm install
 cd ../
@@ -56,6 +76,7 @@ cd generate && pipenv install
 ```
 
 ### Run Locally
+
 ```
 export EZTF_SHEET_ID=[EZTF_SHEET_ID]
 ./generator.sh
@@ -65,16 +86,19 @@ export EZTF_SHEET_ID=[EZTF_SHEET_ID]
 
 ```
 npm start --prefix read_input
-curl localhost:8080  -d '{"spreadsheetId":"$EZTF_SHEET_ID", "generateCode":true}' -H "Content-Type: application/json" 
+curl localhost:8080  -d '{"spreadsheetId":"$EZTF_SHEET_ID", "generateCode":true}' -H "Content-Type: application/json"
+curl localhost:8080  -d '{"ezytfConfigGcsPath":"gs://BUCKET/OBJECT_PATH", "generateCode":true}' -H "Content-Type: application/json"
+curl localhost:8080  -d '{"configContent":"'$(base64 -w 0 CONFIG_FILE_PATH)'",  "configType": "yaml", "generateCode":true, "asyncGenerate":true}' -H "Content-Type: application/json"
 ```
 
 ### Build Locally
+
 ```
 docker build -t ezytf:latest . -f Dockerfile
 ```
 
-
 ### Run Container Locally (as service)
+
 ```
 PORT=8080 && \
 TOKEN=access_token_file && \
@@ -93,7 +117,24 @@ docker run -p 9090:${PORT} \
 ezytf:latest
 ```
 
+### Setup Prerequisite 
+```
+gcloud beta source-manager instances create $SSM_INSTANCE_ID --region=$SSM_REGION  --project=$PROJECT_ID
+```
+
+```
+EZTF_SSM_HOST=https://SSM_INSTANCE_ID-PROJECT_NUMBER.SSM_REGION.sourcemanager.dev
+```
+
+
+```
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF_SERVICE_ACCOUNT --role='roles/securesourcemanager.instanceRepositoryCreator'
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF_SERVICE_ACCOUNT --role='roles/securesourcemanager.repoCreator'
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF_SERVICE_ACCOUNT --role='roles/securesourcemanager.repoWriter'
+```
+
 ### Push Container
+
 ```
 export ARTIFACT_REGISTRY_PATH=us-docker.pkg.dev/[PROJECT_ID]/[REPO_NAME]/ezytf
 docker tag ezytf:latest $ARTIFACT_REGISTRY_PATH/ezytf:latest . -f Dockerfile && \
@@ -101,6 +142,7 @@ docker push $ARTIFACT_REGISTRY_PATH/ezytf:latest
 ```
 
 ### Deploy Cloud Run Service (Service mode)
+
 ```
 gcloud run deploy ezytf --region [REGION] --image=$ARTIFACT_REGISTRY_PATH/ezytf:latest \
 --memory 2Gi \
@@ -116,6 +158,7 @@ gcloud run deploy ezytf --region [REGION] --image=$ARTIFACT_REGISTRY_PATH/ezytf:
 ```
 
 ### Deploy read_input Cloud Function (Workflow Mode)
+
 ```
 cd read_input && \
 gcloud functions deploy ezytf-read-input \
@@ -130,6 +173,7 @@ gcloud functions deploy ezytf-read-input \
 ```
 
 ### Deploy generate Cloud Run Job (Workflow Mode)
+
 ```
 gcloud run jobs deploy ezytf-generate --region [REGION] --image=$ARTIFACT_REGISTRY_PATH/ezytf:latest \
 --memory 2Gi \
@@ -138,5 +182,5 @@ gcloud run jobs deploy ezytf-generate --region [REGION] --image=$ARTIFACT_REGIST
 --command="sh generator.sh" \
 --set-env-vars CI=1 \
 --set-env-vars EZTF_MODE=workflow \
---set-env-vars EZTF_SSM_HOST=[EZTF_SSM_HOST] 
+--set-env-vars EZTF_SSM_HOST=[EZTF_SSM_HOST]
 ```

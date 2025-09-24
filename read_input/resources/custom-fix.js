@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { lower, rmBracket, sepArray } from "../util.js";
+import { lower, rmBracket, sepArray, rpShellVar, pascalCase } from "../util.js";
 
 export {
   fixGroup,
@@ -24,7 +24,98 @@ export {
   fixIam,
   fixVpnHa,
   fixTunnel,
+  fixJsonYamlMap,
+  fixVariable,
+  fixAgentspaceConnector,
 };
+
+const defaultSetupApis = [
+  "serviceusage.googleapis.com",
+  "cloudresourcemanager.googleapis.com",
+  "cloudbilling.googleapis.com",
+  "iam.googleapis.com",
+  "admin.googleapis.com",
+  "storage-api.googleapis.com",
+  "logging.googleapis.com",
+  "monitoring.googleapis.com",
+  "orgpolicy.googleapis.com",
+  "cloudidentity.googleapis.com",
+];
+
+const defaultSetupRoles = [
+  "roles/resourcemanager.organizationAdmin",
+  "roles/orgpolicy.policyAdmin",
+  "roles/iam.organizationRoleAdmin",
+  "roles/resourcemanager.folderAdmin",
+  "roles/resourcemanager.folderIamAdmin",
+  "roles/resourcemanager.projectCreator",
+  "roles/securitycenter.admin",
+  "roles/compute.networkAdmin",
+  "roles/compute.xpnAdmin",
+  "roles/compute.securityAdmin",
+  "roles/iam.serviceAccountCreator",
+  "roles/logging.admin",
+  "roles/monitoring.admin",
+  "roles/pubsub.admin",
+  "roles/bigquery.admin",
+  "roles/compute.instanceAdmin.v1",
+  "roles/billing.user",
+  "roles/serviceusage.serviceUsageConsumer",
+];
+
+const setupIamResourceMap = {
+  projects: "$project_id",
+  "resource-manager folders": "$folder_id",
+  organizations: "$organization_id",
+};
+
+const varReplaceKey = {
+  eztf_config_name: "ez_config_name",
+  output_git_uri: "ez_repo_git_uri",
+  gcs_bucket: "setup_gcs",
+  gcs_bucket_location: "setup_gcs_location",
+};
+
+function fixVariable(data, rangeName) {
+  if (!data) return data;
+  for (const [key, val] of Object.entries(varReplaceKey)) {
+    if (data.hasOwnProperty(key)) {
+      data[val] = data[key];
+      delete data[key];
+    }
+  }
+  if (rangeName === "variable") {
+    if (!data.setup_roles) {
+      data.setup_roles = defaultSetupRoles;
+    }
+    if (!data.setup_apis) {
+      data.setup_apis = defaultSetupApis;
+    }
+    if (!data.setup_iam_resource) {
+      data.setup_iam_resource = "organizations";
+    }
+  }
+  if (!data.setup_iam_resource) {
+    data.setup_iam_resource = "projects";
+  }
+  if (!data.setup_iam_resource_id) {
+    data.setup_iam_resource_id =
+      setupIamResourceMap[data.setup_iam_resource] || "";
+  }
+  return data;
+}
+
+function fixJsonYamlMap(data) {
+  if (!data) return data;
+  let dicKey = data._map_key;
+  if (dicKey) {
+    let newData = {};
+    delete data._map_key;
+    newData[dicKey] = data;
+    return newData;
+  }
+  return data;
+}
 
 function fixGroup(data) {
   if (!data) return data;
@@ -35,35 +126,20 @@ function fixGroup(data) {
   return data;
 }
 
-function iamPrincipal(name, type, workforce_pool_id) {
+function iamPrincipal(name, type) {
   name = rmBracket(name);
-  if (type.startsWith("principal")) {
+
+  if (type.startsWith("principal") && name.split("/").length === 3) {
     let prefixWorkforce =
       "//iam.googleapis.com/locations/global/workforcePools";
-    switch (name.split("/").length) {
-      case 1: {
-        let workforce_type = type === "principal" ? "subject" : "group";
-        name = `${workforce_pool_id}/${workforce_type}/${name}`;
-        break;
-      }
-      case 2:
-        name = `${workforce_pool_id}/${name}`;
-        break;
-    }
     name = `${prefixWorkforce}/${name}`;
   }
   return `${type}:${name}`;
 }
 
-function fixIam(data, eztf) {
+function fixIam(data) {
   if (!data) return data;
-  let workforce_pool_id =
-    eztf.eztfConfig["variable"]["workforce_pool_id"] || "";
-  data.principal = iamPrincipal(
-    data.principal,
-    data.principal_type,
-    workforce_pool_id
-  );
+  data.principal = iamPrincipal(data.principal, data.principal_type);
   return data;
 }
 
@@ -157,3 +233,135 @@ function fixTunnel(data) {
     `remote-${data.vpn_gateway_interface}-${data.peer_external_gateway_interface}`;
   return data;
 }
+
+function fixAgentspaceConnector(data) {
+  let entities = {};
+  for (const item of data.entities) {
+    let filterKeyLi = item.split(".");
+    let entity = filterKeyLi.pop();
+    entities[item] = { entityName: entity };
+    if (filterKeyLi.length >= 1) {
+      let rootEntity = filterKeyLi[0];
+      entities[rootEntity] = entities[rootEntity] || { entityName: rootEntity };
+    }
+  }
+
+  let bodyVars = {};
+
+  for (const filter_type of ["inclusion_filters", "exclusion_filters"]) {
+    for (const key in data[filter_type]) {
+      let filterVal = sepArray(data[filter_type][key]);
+      // if (filterVal.length === 0) continue;
+      let filterKeyLi = key.split(".");
+      let filterKey = filterKeyLi.pop();
+      let entityKey = filterKeyLi.join(".");
+      let filterKeyVarName = pascalCase(
+        filter_type.slice(0, 2) + " " + filterKey
+      );
+      bodyVars[filterKeyVarName] =
+        "[" + filterVal.map((item) => `"${item}"`).join(", ") + "]";
+
+      if (entities[entityKey]) {
+        entities[entityKey]["params"] = entities[entityKey]["params"] || {};
+        entities[entityKey]["params"][filter_type] =
+          entities[entityKey]["params"][filter_type] || {};
+        entities[entityKey]["params"][filter_type][
+          filterKey
+        ] = `$[${filterKeyVarName}]`;
+      }
+    }
+  }
+
+  for (const key in data["entity_params"]) {
+    let entParamVal = data["entity_params"][key];
+    let entParamKeyLi = key.split(".");
+    let entParamKey = entParamKeyLi.pop();
+    let entityKey = entParamKeyLi.join(".");
+    if (entities[entityKey]) {
+      entities[entityKey]["params"] = entities[entityKey]["params"] || {};
+      entities[entityKey]["params"][entParamKey] = entParamVal;
+    }
+  }
+
+  if (data.method === "POST") {
+    data.json.dataConnector = data.json.dataConnector || {};
+    var connectorBody = data.json.dataConnector;
+  } else {
+    data.json = data.json || {};
+    var connectorBody = data.json || {};
+  }
+  
+  let connectorSource = connectorBody.dataSource;
+
+  for (const param in data["auth_params"]) {
+    let authParamVal = data["auth_params"][param] || "";
+    let authKeyName = pascalCase(connectorSource.split("_")[0] + "_" + param);
+    bodyVars[authKeyName] = authParamVal;
+    data["auth_params"][param] = `$\{${authKeyName}\}`;
+  }
+  
+  var actionParam = connectorBody?.actionConfig?.actionParams || {};
+  for (const param in actionParam) {
+    let actParamVal = actionParam[param] || "";
+    let actKeyName = pascalCase("Ac_"+ connectorSource.split("_")[0] + "_" + param);
+    bodyVars[actKeyName] = actParamVal;
+    actionParam[param] = `$\{${actKeyName}\}`;
+  }
+
+  connectorBody.params = connectorBody.params || {};
+  connectorBody.entities = Object.values(entities);
+  let connectorParams = connectorBody.params;
+
+  for (const paramType of ["auth_params", "connector_params"]) {
+    connectorParams = { ...connectorParams, ...data[paramType] };
+  }
+  for (const k in connectorParams) {
+    let v = connectorParams[k];
+    if (v === undefined || v === null || v === "") {
+      delete connectorParams[k];
+    }
+  }
+  connectorBody.params = connectorParams;
+  data.vars = { ...data.vars, ...bodyVars };
+
+  // console.log(JSON.stringify(data, null, 2))
+
+  if (data.data === undefined || data.json !== undefined) {
+    data.data = rpShellVar(JSON.stringify(data.json, null, 2));
+  }
+
+  //  del
+  for (const key of [
+    "auth_params",
+    "connector_params",
+    "entities",
+    "exclusion_filters",
+    "inclusion_filters",
+    "entity_params",
+    "action_params",
+    "json",
+  ]) {
+    delete data[key];
+  }
+
+  return data;
+}
+
+// PATCH
+// update_mask=entities.params
+// refreshInterval
+// params
+// autoRunDisabled
+// actionConfig
+// actionConfig.action_params
+// actionConfig.service_name
+// destinationConfigs
+// blockingReasons
+// syncMode
+// incrementalSyncDisabled
+// incrementalRefreshInterval
+// https://cloud.google.com/generative-ai-app-builder/docs/reference/rest/v1alpha/projects.locations.collections/updateDataConnector#query-parameters
+
+// for (const ent in entities) {
+//   if (ent.startsWith(`${entityKey}.`) || entities[entityKey]) {}
+// }

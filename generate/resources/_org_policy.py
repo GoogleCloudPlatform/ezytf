@@ -24,6 +24,8 @@ import util
 
 def create_org_policy(self, org_policy):
     node_type = org_policy["policy_root"]
+    if node_type == "folder":
+        node_type = "folder_id"
     node = org_policy.get("policy_root_id", "org")
     name = org_policy["constraint"]
     org_policy["policy_root_id"] = self.tf_ref(node_type, node)
@@ -64,9 +66,7 @@ def generate_org_policies(self, my_resource, resource):
         name = org_policy["constraint"]
         if name == "iam.allowedPolicyMemberDomains":
             org_allow_domain = org_policy["rules"][0]["allow"]
-            org_allow_domain.append(
-                self.created["data"]["google_org"].directory_customer_id
-            )
+            org_allow_domain.append(self.tf_ref("customer_id",""))
             org_policy["rules"][0]["allow"] = TerraformLocal(
                 self,
                 "org_allow_member_domain",

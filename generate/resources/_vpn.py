@@ -18,6 +18,7 @@ from cdktf_cdktf_provider_google.compute_external_vpn_gateway import (
 )
 from imports.vpn import Vpn
 from imports.vpn_ha import VpnHa
+from imports.ff_net_vpn_ha import FfNetVpnHa
 
 
 def create_vpn(self, vpn):
@@ -73,3 +74,27 @@ def generate_vpn_ha(self, my_resource, resource):
     self.added["vpn_ha"].update({vpn["name"] for vpn in vpn_ha})
     for vpn in vpn_ha:
         create_vpn_ha(self, vpn)
+
+
+# fabric
+
+
+def create_ff_vpn_ha(self, vpn_ha):
+    "create vpn_ha"
+    vpn_ha_name = vpn_ha["name"]
+    vpn_ha["project_id"] = self.tf_ref("project", vpn_ha["project_id"])
+    vpn_ha["network"] = self.tf_ref("network", vpn_ha["network"])
+
+    for _, peer in vpn_ha.get("peer_gateways", {}).items():
+        if peer_gcp_gateway := peer.get("gcp"):
+            peer["gcp"] = self.tf_ref("vpn_ha", peer_gcp_gateway)
+
+    self.created["fabric"]["vpn_ha"][vpn_ha_name] = FfNetVpnHa(
+        self, f"vpn_ha_{vpn_ha_name}", **vpn_ha
+    )
+
+
+def generate_ff_vpn_ha(self, my_resource, resource):
+    "create vpn ha"
+    for vpn_ha in self.eztf_config.get(my_resource, []):
+        create_ff_vpn_ha(self, vpn_ha)

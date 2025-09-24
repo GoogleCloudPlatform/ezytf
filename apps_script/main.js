@@ -44,8 +44,10 @@ function invokeTfGeneration(serviceAccount, cloudRunUrl, generateCode = false) {
     };
     var response = UrlFetchApp.fetch(cloudRunUrl, runOptions);
     Logger.log(response.getContentText());
+    return JSON.parse(response.getContentText())
   } catch (error) {
     console.error("Error invoking Cloud Function:", error);
     SpreadsheetApp.getUi().alert("An error occurred.");
+    return {}
   }
 }

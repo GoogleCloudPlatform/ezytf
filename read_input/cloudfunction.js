@@ -24,22 +24,45 @@ functions.http("readInputGenerateTF", async (req, res) => {
     if (req.method !== "POST") {
       return res.status(405).end();
     }
+    const configContent = req.body.configContent;
+    const ezytfConfigGcsPath = req.body.ezytfConfigGcsPath;
+    const configType = req.body.configType || "yaml"; // sheet, yaml, json
     const spreadsheetId = req.body.spreadsheetId;
     const generateCode = req.body.generateCode || false;
+    const asyncGenerate = req.body.async || false;
     const configBucket =
       req.body.configBucket || process.env.EZTF_CONFIG_BUCKET || "";
-    if (req.body.outputBucket) {
-      process.env.EZTF_OUTPUT_BUCKET = req.body.outputBucket;
+    const outputBucket =
+      req.body.outputBucket || process.env.EZTF_OUTPUT_BUCKET || "";
+    
+    let requestLog = { ... req.body };
+    if (requestLog.configContent){
+      requestLog.configContentProvided = true
+      delete requestLog.configContent
     }
-    console.log(req.body)
-    if (!spreadsheetId) {
-      return res.status(400).send("Missing spreadsheetId parameter");
-    }
+    console.log(requestLog);
 
-    await main(spreadsheetId, configBucket, generateCode);
-    res.status(200).send("config generation started");
+    if (spreadsheetId || configContent || ezytfConfigGcsPath) {
+      let output = await main(
+        spreadsheetId,
+        configBucket,
+        outputBucket,
+        generateCode,
+        configType,
+        configContent,
+        ezytfConfigGcsPath,
+        asyncGenerate
+      );
+      res.status(200).send(output);
+    } else {
+      res
+        .status(400)
+        .send(
+          {"error":"Provide either spreadsheetId, configContent or ezytfConfigGcsPath"}
+        );
+    }
   } catch (error) {
     console.error("Error Generating", error);
-    res.status(500).send("Internal server error");
+    res.status(500).send({"error":`Internal server error ${error}`});
   }
 });
