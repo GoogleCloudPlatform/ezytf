@@ -8,6 +8,7 @@
 # setup_iam_resource_id # either project_id, folder_id, organization_id
 
 gcloud projects create $setup_project_id
+gcloud billing projects link $setup_project_id --billing-account=$billing_id
 gcloud config set project $setup_project_id
 
 user_account=$(gcloud config list account --format 'value(core.account)')

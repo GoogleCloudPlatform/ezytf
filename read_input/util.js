@@ -55,33 +55,37 @@ export {
   pascalCase,
 };
 
+  // If value is null or undefined, use an empty string (""), otherwise use the value.
+  // str = String(str ?? "")
+
 function cleanKey(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return lower(sepArray(str, ":").join("."));
 }
 
 function lower(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return rpSpaces(rmBracket(str)).toLowerCase();
 }
 
 function underscoreRes(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return str.trim().replace(/\./g, "_").replace(/-/g, "_").toLowerCase();
 }
 
 function rpSpaces(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return str.trim().replace(/\s+/g, "_");
 }
 
 function cleanRes(str) {
-  if (!str) str = "";
+  str = String(str ?? "")
   return str.trim().replace(/\./g, "-").replace(/_/g, "-").toLowerCase();
 }
 
 // replaces $[varName] to '${varName}'
 function rpShellVar(str) {
+  str = String(str ?? "")
   str = str.replace(/(\$\{[^\}]+\}|\$\([^\)]+\))/gm, `'$1'`);
   str = str.replace(/"\$\[([^\]]+)\]"/gm, `'$\{$1\}'`);
   return str;
@@ -106,7 +110,7 @@ function trim(str) {
 }
 
 function rmBracket(str, bracket = "()") {
-  if (!str) str = "";
+  str = String(str ?? "")
   switch (bracket) {
     case "()$":
       return str.replace(/\s*\([^()]*\)\s*$/gm, "").trim();
@@ -126,6 +130,7 @@ function isValue(str, value) {
 }
 
 function pascalCase(name) {
+  name = String(name ?? "")
   return name
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase())
@@ -133,7 +138,7 @@ function pascalCase(name) {
 }
 
 function sepArray(str, sep = ",") {
-  if (!str) str = "";
+  str = String(str ?? "")
   str = String(str);
   return str
     .split(sep)
@@ -208,8 +213,7 @@ function keyValStr(str, sep = ":") {
 }
 
 function sepKeyValPairs(str, sep = ";", forceVal = false, data = {}) {
-  if (!str) str = "";
-  str = String(str);
+  str = String(str ?? "")
   let strArray = sepArray(rmBracket(str, "()$"), sep);
   strArray.forEach((line) => {
     let [key, val] = keyValStr(line, ":");

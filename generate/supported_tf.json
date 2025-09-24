@@ -12,6 +12,7 @@
   "ff_folders",
   "ff_projects",
   "iam",
+  "iam_member",
   "service_account",
   "ff_iam_sa",
   "project_api",

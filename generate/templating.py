@@ -17,6 +17,7 @@ REPO_TEMPLATE_FILE = {
 
 SETUP_VAR_ENV = [
     "organization_id",
+    "billing_id",
     "setup_project_id",
     "setup_iam_resource",
     "setup_iam_resource_id",

@@ -34,7 +34,7 @@ from ._wif import (
 from ._sa import generate_sa, generate_ff_iam_sa
 from ._myfolders import generate_folders, generate_ff_folders
 from ._projects import generate_projects, generate_svc_projects, generate_ff_projects
-from ._iam import generate_iam
+from ._iam import generate_iam, generate_iam_member
 from ._api import generate_project_services
 from ._network import (
     generate_networks,
@@ -118,6 +118,7 @@ creation = {
     "ff_folders": generate_ff_folders,
     "ff_projects": generate_ff_projects,
     "iam": generate_iam,
+    "iam_member": generate_iam_member,
     "service_account": generate_sa,
     "ff_iam_sa": generate_ff_iam_sa,
     "project_api": generate_project_services,
