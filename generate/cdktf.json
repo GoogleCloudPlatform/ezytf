@@ -9,7 +9,7 @@
     {
       "name": "group",
       "source": "terraform-google-modules/group/google",
-      "version": "~> 0.7.0"
+      "version": "~> 0.8.0"
     },
     {
       "name": "project-factory",
@@ -89,7 +89,7 @@
     {
       "name": "cloud-router",
       "source": "terraform-google-modules/cloud-router/google",
-      "version": "~> 7.3.0"
+      "version": "~> 7.4.0"
     },
     {
       "name": "vpn",
@@ -104,22 +104,22 @@
     {
       "name": "gke",
       "source": "terraform-google-modules/kubernetes-engine/google",
-      "version": "~> 40.0.0"
+      "version": "~> 41.0.1"
     },
     {
       "name": "gke_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-private-cluster",
-      "version": "~> 40.0.0"
+      "version": "~> 41.0.1"
     },
     {
       "name": "gke_autopilot",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-public-cluster",
-      "version": "~> 40.0.0"
+      "version": "~> 41.0.1"
     },
     {
       "name": "gke_autopilot_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-private-cluster",
-      "version": "~> 40.0.0"
+      "version": "~> 41.0.1"
     },
     {
       "name": "sc_access_level",
@@ -144,47 +144,47 @@
     {
       "name": "pgsql",
       "source": "terraform-google-modules/sql-db/google//modules/postgresql",
-      "version": "~> 26.2.0"
+      "version": "~> 26.2.2"
     },
     {
       "name": "mysql",
       "source": "terraform-google-modules/sql-db/google//modules/mysql",
-      "version": "~> 26.2.0"
+      "version": "~> 26.2.2"
     },
     {
       "name": "mssql",
       "source": "terraform-google-modules/sql-db/google//modules/mssql",
-      "version": "~> 26.2.0"
+      "version": "~> 26.2.2"
     },
     {
       "name": "psa",
       "source": "terraform-google-modules/sql-db/google//modules/private_service_access",
-      "version": "~> 26.2.0"
+      "version": "~> 26.2.2"
     },
     {
       "name": "instance_from_template",
       "source": "terraform-google-modules/vm/google//modules/compute_instance",
-      "version": "~> 13.6.0"
+      "version": "~> 13.6.1"
     },
     {
       "name": "instance_template",
       "source": "terraform-google-modules/vm/google//modules/instance_template",
-      "version": "~> 13.6.0"
+      "version": "~> 13.6.1"
     },
     {
       "name": "mig",
       "source": "terraform-google-modules/vm/google//modules/mig",
-      "version": "~> 13.6.0"
+      "version": "~> 13.6.1"
     },
     {
       "name": "umig",
       "source": "terraform-google-modules/vm/google//modules/umig",
-      "version": "~> 13.6.0"
+      "version": "~> 13.6.1"
     },
     {
       "name": "bigquery",
       "source": "terraform-google-modules/bigquery/google",
-      "version": "~> 10.2.0"
+      "version": "~> 10.2.1"
     },
     {
       "name": "ff_cloud-identity-group",

@@ -11,38 +11,38 @@ Make a copy of this [Google Sheet](https://docs.google.com/spreadsheets/d/1cvjTM
 
 ezytf can be deployed in either service or workflow mode.
 
-#### Workflow
-
-```mermaid
-flowchart LR
-    Sheet("`fa:fa-table Google Sheet`")
-    Read("`Read Input <br> fa:fa-code *Cloud Function*`")
-    Yaml[("`Intermediate config <br> fa:fa-bucket *Input gcs*`")]
-    Generate("`Generate <br> fa:fa-code *Cloud Run Job*`")
-    Output[("`Generated Code<br> fa:fa-file-code *ssm repo/fa:fa-bucket gcs*`")]
-    Sheet --> |App scripts <br> Trigger| Read --> Yaml  -. cloud workflow <br> trigger.-> Generate --> Output
-```
-
 #### Service
 
 ```mermaid
 flowchart LR
-    Sheet("`fa:fa-table Google Sheet`")
+    Sheet("`JSON / YAML / <br> fa:fa-table Google Sheet`")
     Read("`Read Input`")
     Generate("`Generate`")
     Output[("`Generated Code<br> fa:fa-file-code *ssm repo/fa:fa-bucket gcs*`")]
-    Sheet --> |App scripts <br> Trigger| Read
+    Sheet --> |API / <br > App scripts <br> Trigger| Read
     subgraph service [Cloud Run Service fa:fa-code]
     Read --> Generate
     end
     Generate --> Output
 ```
 
+#### Workflow
+
+```mermaid
+flowchart LR
+    Sheet("JSON / YAML / <br> fa:fa-table Google Sheet")
+    Read("`Read Input <br> fa:fa-code *Cloud Function*`")
+    Yaml[("`Intermediate config <br> fa:fa-bucket *Input gcs*`")]
+    Generate("`Generate <br> fa:fa-code *Cloud Run Job*`")
+    Output[("`Generated Code<br> fa:fa-file-code *ssm repo/fa:fa-bucket gcs*`")]
+    Sheet --> |API / <br >App scripts <br> Trigger| Read --> Yaml  -. cloud workflow <br> trigger.-> Generate --> Output
+```
+
 ### Environment Variables
 
 | Variable           | Description                                                                    | Required |
 | ------------------ | ------------------------------------------------------------------------------ | -------- |
-| EZTF_SHEET_ID      | google sheet ID                                                                | yes      |
+| EZTF_SHEET_ID      | google sheet ID                                                                | no       |
 | EZTF_CONFIG_DIR    | local dir of intermediate config, default:ezytf-gen-data/eztf-config           | no       |
 | EZTF_OUTPUT_DIR    | local output dir to store output, default:ezytf-gen-data/eztf-output           | no       |
 | EZTF_INPUT_CONFIG  | local intermediate config file or gcs stored config file                       | no       |
@@ -101,8 +101,6 @@ docker build -t ezytf:latest . -f Dockerfile
 
 ```
 PORT=8080 && \
-TOKEN=access_token_file && \
-gcloud auth print-access-token > $TOKEN &&
 ADC=~/.config/gcloud/application_default_credentials.json && \
 docker run -p 9090:${PORT} \
 -e EZTF_MODE=service \
@@ -110,14 +108,14 @@ docker run -p 9090:${PORT} \
 -e EZTF_SSM_HOST=[EZTF_SSM_HOST] \
 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/google_adc.json \
 -e GOOGLE_CLOUD_PROJECT=[PROJECT_ID] \
--e EZTF_ACCESS_TOKEN_FILE=/tmp/access_token_file \
 -v $(pwd)/$TOKEN:/tmp/access_token_file:ro \
 -v $ADC:/tmp/google_adc.json:ro \
 -v $(pwd)/ezytf-gen-data:/app/ezytf-gen-data \
 ezytf:latest
 ```
 
-### Setup Prerequisite 
+### Setup Prerequisite
+
 ```
 gcloud beta source-manager instances create $SSM_INSTANCE_ID --region=$SSM_REGION  --project=$PROJECT_ID
 ```
@@ -125,7 +123,6 @@ gcloud beta source-manager instances create $SSM_INSTANCE_ID --region=$SSM_REGIO
 ```
 EZTF_SSM_HOST=https://SSM_INSTANCE_ID-PROJECT_NUMBER.SSM_REGION.sourcemanager.dev
 ```
-
 
 ```
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF_SERVICE_ACCOUNT --role='roles/securesourcemanager.instanceRepositoryCreator'

@@ -181,6 +181,7 @@ async function generateTF(
 ) {
   console.log("running code generation");
 
+  // if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE 2>/dev/null ; fi && \
   let generateScript = `export EZTF_INPUT_CONFIG=${eztfInputConfigFile} && \
     export EZTF_IS_TF=${anyTfStack} && \
     export EZTF_CDK_OUTPUT_DIR=${customer} && \
@@ -188,7 +189,6 @@ async function generateTF(
     export EZTF_CONFIG_BUCKET=${configBucket} && \
     export EZTF_OUTPUT_BUCKET=${outputBucket} && \
     export EZTF_OUTPUT_GCS_PREFIX=${outputGcsPrefix} && \
-    if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE 2>/dev/null ; fi && \
     cd ../generate && \
     
     if [ "\${EZTF_IS_TF}" = "true" ]; then cdktf synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null ; fi && \

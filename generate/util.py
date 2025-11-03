@@ -28,6 +28,7 @@ import google.oauth2.credentials
 import google.auth.transport.requests
 from google.cloud import storage
 from google.cloud.storage import transfer_manager
+from google.cloud import securesourcemanager_v1 as ssm
 from git import Repo
 import requests
 import jinja2
@@ -66,7 +67,9 @@ def clean_res_id(name):
     """returns resource id name lowercase and hypen"""
     return name.lower().replace(".", "-").replace("_", "-")
 
-_find_unsafe = re.compile(r'[^\w@$%+=:,./-]', re.ASCII).search
+
+_find_unsafe = re.compile(r"[^\w@$%+=:,./-]", re.ASCII).search
+
 
 def shell_quote(s):
     """Return a shell-escaped version of the string *s*."""
@@ -78,6 +81,7 @@ def shell_quote(s):
     if _find_unsafe(s) is None:
         return s
     return "'" + s.replace("'", "'\"'\"'") + "'"
+
 
 def lower(name):
     """return lower case name replaces with underscore"""
@@ -424,7 +428,45 @@ def ssm_url_extract(url):
 
 
 def ssm_repository(repo_name, ssm_url):
-    """Lists repositories in a Secure Source Manager instance using the requests library."""
+    """Checks & Creates repositoriy in a Secure Source Manager instance using SDK."""
+
+    instance_id, project_number, location = ssm_url_extract(ssm_url)
+    repo_parent = f"projects/{project_number}/locations/{location}"
+    repo_id = f"{repo_parent}/repositories/{repo_name}"
+    instance_path = f"{repo_parent}/instances/{instance_id}"
+
+    client = ssm.SecureSourceManagerClient()
+
+    list_request = ssm.ListRepositoriesRequest(
+        parent=repo_parent, instance=instance_path
+    )
+    page_result = client.list_repositories(request=list_request)
+
+    for response in page_result:
+        if response.name == repo_id:
+            print(f"git repo present, skipping creation {response.uris.git_https}")
+            return response.uris.git_https
+
+    # create repository
+    create_request = ssm.CreateRepositoryRequest(
+        parent=repo_parent,
+        repository=ssm.Repository(instance=instance_path),
+        repository_id=repo_name,
+    )
+    operation = client.create_repository(request=create_request)
+    response = operation.result()
+    
+    created_repo = ""
+    try:
+        created_repo = response.uris.git_https
+        print(f"ssm git repo created {created_repo}")
+    except AttributeError:
+        print("create repository failed", response)
+    return created_repo
+
+
+def api_ssm_repository(repo_name, ssm_url):
+    """Checks & Creates repositoriy in a Secure Source Manager instance using the requests library."""
 
     instance_id, project_number, location = ssm_url_extract(ssm_url)
     access_token = get_access_token()
@@ -573,12 +615,12 @@ def python_to_bash_vars(vars, export=False):
             # Note: Both keys and values are converted to strings and quoted.
             items_str = []
             for k, v in value.items():
-                items_str.append(
-                    f"[{shlex.quote(bash_str(k))}]={shell_quote(v)}"
-                )
+                items_str.append(f"[{shlex.quote(bash_str(k))}]={shell_quote(v)}")
             bash_commands.append(f"declare -A {name}=({' '.join(items_str)})")
         else:
-            print(f"Unsupported '{name}': {type(value)}. Only str, list, dict are supported")
+            print(
+                f"Unsupported '{name}': {type(value)}. Only str, list, dict are supported"
+            )
 
     output_string = "\n".join(bash_commands)
     return output_string
