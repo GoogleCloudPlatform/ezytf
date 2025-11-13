@@ -455,7 +455,7 @@ def ssm_repository(repo_name, ssm_url):
     )
     operation = client.create_repository(request=create_request)
     response = operation.result()
-    
+
     created_repo = ""
     try:
         created_repo = response.uris.git_https
@@ -515,7 +515,7 @@ def api_ssm_repository(repo_name, ssm_url):
     return created_repo
 
 
-def push_folder_to_git(repo_path, remote_url, branch_name="main"):
+def push_folder_to_git(repo_path, remote_url, branch_name="main", key_file=""):
     """Pushes the contents of an existing folder to a Git repository.
 
     Args:
@@ -523,6 +523,11 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
         remote_url: The URL of the remote git repository (e.g., "https://github.com/your-username/your-repo.git").
         branch_name: The branch to push to (defaults to "main").
     """
+
+    key_file_str = ""
+    if key_file:
+        key_file_str = f"-i {key_file}"
+    ssh_cmd = f'ssh {key_file_str} -o "StrictHostKeyChecking no"'
 
     repo = Repo.init(repo_path)
 
@@ -539,13 +544,13 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
     if "origin" not in repo.remotes:
         repo.create_remote("origin", remote_url)
 
-    origin = repo.remotes.origin
     r = re.compile(r"refs/tags/0\.(\d+)-auto")
-    max_tag = 0
     # below command returns
     # 0206504b3460ac4e63e28461c525a3708f20a960        refs/tags/0.1-auto
-    rem_tag = repo.git.ls_remote("--tags", "origin", "0.*-auto").strip()
+    with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+        rem_tag = repo.git.ls_remote("--tags", "origin", "0.*-auto").strip()
 
+    max_tag = 0
     for tagline in rem_tag.split("\n"):
         tagl = tagline.strip().split()
         if len(tagl) < 2:
@@ -556,11 +561,13 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
     max_tag += 1
     tag = f"0.{max_tag}-auto"
     repo.create_tag(tag)
-    origin.push(
-        refspec=[f"{branch_name}:{branch_name}", f"{tag}:{tag}"],
-        force=True,
-        atomic=True,
-    )
+
+    with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+        repo.remotes.origin.push(
+            refspec=[f"{branch_name}:{branch_name}", f"{tag}:{tag}"],
+            force=True,
+            atomic=True,
+        )
     print(f"Successfully pushed branch {branch_name} & tag {tag} to {remote_url}")
 
 

@@ -53,39 +53,40 @@ export {
   runCommandSync,
   rpShellVar,
   pascalCase,
+  generateRandomId,
 };
 
-  // If value is null or undefined, use an empty string (""), otherwise use the value.
-  // str = String(str ?? "")
+// If value is null or undefined, use an empty string (""), otherwise use the value.
+// str = String(str ?? "")
 
 function cleanKey(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return lower(sepArray(str, ":").join("."));
 }
 
 function lower(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return rpSpaces(rmBracket(str)).toLowerCase();
 }
 
 function underscoreRes(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return str.trim().replace(/\./g, "_").replace(/-/g, "_").toLowerCase();
 }
 
 function rpSpaces(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return str.trim().replace(/\s+/g, "_");
 }
 
 function cleanRes(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return str.trim().replace(/\./g, "-").replace(/_/g, "-").toLowerCase();
 }
 
 // replaces $[varName] to '${varName}'
 function rpShellVar(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   str = str.replace(/(\$\{[^\}]+\}|\$\([^\)]+\))/gm, `'$1'`);
   str = str.replace(/"\$\[([^\]]+)\]"/gm, `'$\{$1\}'`);
   return str;
@@ -110,7 +111,7 @@ function trim(str) {
 }
 
 function rmBracket(str, bracket = "()") {
-  str = String(str ?? "")
+  str = String(str ?? "");
   switch (bracket) {
     case "()$":
       return str.replace(/\s*\([^()]*\)\s*$/gm, "").trim();
@@ -130,7 +131,7 @@ function isValue(str, value) {
 }
 
 function pascalCase(name) {
-  name = String(name ?? "")
+  name = String(name ?? "");
   return name
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase())
@@ -138,7 +139,7 @@ function pascalCase(name) {
 }
 
 function sepArray(str, sep = ",") {
-  str = String(str ?? "")
+  str = String(str ?? "");
   str = String(str);
   return str
     .split(sep)
@@ -146,12 +147,12 @@ function sepArray(str, sep = ",") {
     .filter((value) => value);
 }
 
-function writeFile(filePath, data) {
+function writeFile(filePath, data, options = {}) {
   var dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(filePath, data);
+  fs.writeFileSync(filePath, data, options);
 }
 
 function readJson(filePath) {
@@ -213,7 +214,7 @@ function keyValStr(str, sep = ":") {
 }
 
 function sepKeyValPairs(str, sep = ";", forceVal = false, data = {}) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   let strArray = sepArray(rmBracket(str, "()$"), sep);
   strArray.forEach((line) => {
     let [key, val] = keyValStr(line, ":");
@@ -450,6 +451,12 @@ function getCurrentTimeFormatted() {
   const minutes = String(now.getMinutes()).padStart(2, "0");
 
   return `${year}-${month}-${day}_${hours}-${minutes}`;
+}
+
+function generateRandomId(length = 6) {
+  return Math.random()
+    .toString(36)
+    .substring(2, length + 2);
 }
 
 async function getProjectIdFromNumber(projectNumber) {

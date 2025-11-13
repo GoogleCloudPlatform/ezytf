@@ -25,6 +25,7 @@ SSM_HOST = os.environ.get("EZTF_SSM_HOST")
 EZTF_MODE = os.environ.get("EZTF_MODE")
 EZTF_OUTPUT_GCS_PREFIX = os.environ.get("EZTF_OUTPUT_GCS_PREFIX")
 CDKTF_OUTPUT_DIR = os.environ.get("EZTF_CDK_OUTPUT_DIR") or "cdktf.out"
+GIT_PVT_KEY_FILE = os.environ.get("EZTF_PVT_KEY_FILE", "")
 
 
 def code_push_remote(repo_name, repo_folder, git_uri):
@@ -40,7 +41,7 @@ def code_push_remote(repo_name, repo_folder, git_uri):
         git_uri = util.ssm_repository(repo_name, SSM_HOST)
 
     if git_uri:
-        util.push_folder_to_git(repo_folder, git_uri, "auto")
+        util.push_folder_to_git(repo_folder, git_uri, "auto", GIT_PVT_KEY_FILE)
 
 
 def resource_in_stack(stack_dict, stack_name):
@@ -224,6 +225,7 @@ def main(config_dict):
     domain = variable["domain"]
     config_type = variable.get("ez_config_name") or "ezy"
     config_git_uri = variable.get("ez_repo_git_uri", "")
+    # config_git_pvt_key = variable.get("ez_repo_git_pvt_key", "")
 
     clean_domain = util.clean_res_id(domain)
     repo = f"gcp-{clean_domain}-{config_type}"

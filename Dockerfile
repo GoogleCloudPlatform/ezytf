@@ -48,7 +48,7 @@ RUN corepack enable yarn
 
 RUN pip install -U pip pipenv
 
-RUN apt-get update && apt-get install -y --no-install-recommends git wget unzip
+RUN apt-get update && apt-get install -y --no-install-recommends git wget unzip openssh-client
 
 # USER ez
 WORKDIR /app

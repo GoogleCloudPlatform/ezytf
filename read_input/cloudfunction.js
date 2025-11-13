@@ -29,6 +29,7 @@ functions.http("readInputGenerateTF", async (req, res) => {
     const configType = req.body.configType || "yaml"; // sheet, yaml, json
     const spreadsheetId = req.body.spreadsheetId;
     const generateCode = req.body.generateCode || false;
+    const gitPvtKey = req.body.gitPvtKey;
     const asyncGenerate = req.body.async || false;
     const configBucket =
       req.body.configBucket || process.env.EZTF_CONFIG_BUCKET || "";
@@ -51,7 +52,8 @@ functions.http("readInputGenerateTF", async (req, res) => {
         configType,
         configContent,
         ezytfConfigGcsPath,
-        asyncGenerate
+        asyncGenerate,
+        gitPvtKey
       );
       res.status(200).send(output);
     } else {
