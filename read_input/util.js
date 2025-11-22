@@ -54,6 +54,7 @@ export {
   rpShellVar,
   pascalCase,
   generateRandomId,
+  formatPrivateKeyBody
 };
 
 // If value is null or undefined, use an empty string (""), otherwise use the value.
@@ -358,6 +359,21 @@ async function readFromGcsPath(gcsPath) {
   } else {
     return null;
   }
+}
+
+function formatPrivateKeyBody(privateKey) {
+  const regex = /(\s*-----BEGIN.*?PRIVATE KEY-----\s*)(.*?)(-----END.*?PRIVATE KEY-----\s*)/s;
+  const match = privateKey.match(regex);
+  if (!match) {
+    console.error("Could not find standard SSH key header/footer. Returning original string.");
+    return privateKey + "\n";
+  }
+  const header = match[1];
+  const keyBodyWithSpaces = match[2];
+  const footer = match[3];
+
+  const formattedKeyBody = keyBodyWithSpaces.trim().split(/\s+/).join('\n')
+  return `${header.trim()}\n${formattedKeyBody}\n${footer.trim()}\n`;
 }
 
 function nestObject(flatObject, delimiter = ".") {

@@ -39,6 +39,7 @@ import {
   runCommand,
   runCommandSync,
   generateRandomId,
+  formatPrivateKeyBody,
 } from "./util.js";
 
 export { main };
@@ -61,7 +62,7 @@ const defaultPvtKey = process.env.EZTF_SSH_PVT_KEY;
 const keyFilePermissions = 0o600;
 
 if (defaultPvtKey) {
-  writeFile(defaultPvtKeyFile, defaultPvtKey + "\n", {
+  writeFile(defaultPvtKeyFile, formatPrivateKeyBody(defaultPvtKey), {
     mode: keyFilePermissions,
   });
 }
@@ -133,6 +134,10 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
     );
   } else if (gitUri.endsWith(".git")) {
     repoUrl = gitUri.slice(0, -4);
+    if (repoUrl.startsWith("git@")) {
+      repoUrl = repoUrl.slice(4).replace(":", "/");
+      repoUrl = repoUrl.replace(/-ssh(?=\..+\.sourcemanager\.dev)/, "");
+    }
     // remove -git ssm git uri
     repoUrl = repoUrl.replace(/-git(?=\..+\.sourcemanager\.dev)/, "");
   }
@@ -196,7 +201,7 @@ async function generateTF(
   let pvtKeyFile = "";
   if (gitPvtKey) {
     pvtKeyFile = `/tmp/pvt_key_${customer}_${generateRandomId()}`;
-    writeFile(pvtKeyFile, gitPvtKey + "\n", { mode: keyFilePermissions });
+    writeFile(pvtKeyFile, formatPrivateKeyBody(gitPvtKey), { mode: keyFilePermissions });
   }
   // if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE 2>/dev/null ; fi && \
   let generateScript = `export EZTF_INPUT_CONFIG=${eztfInputConfigFile} && \

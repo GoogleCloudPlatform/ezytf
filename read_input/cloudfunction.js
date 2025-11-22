@@ -41,6 +41,10 @@ functions.http("readInputGenerateTF", async (req, res) => {
       requestLog.configContentProvided = true
       delete requestLog.configContent
     }
+    if (requestLog.gitPvtKey){
+      requestLog.gitPvtKeyProvided = true
+      delete requestLog.gitPvtKey
+    }
     console.log(requestLog);
 
     if (spreadsheetId || configContent || ezytfConfigGcsPath) {
