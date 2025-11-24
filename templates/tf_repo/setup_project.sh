@@ -42,5 +42,5 @@ done
 # {% if setup_gcs %}
 # Create GCS State Bucket, add IAM to bucket
 gcloud storage buckets create gs://$setup_gcs --location=$setup_gcs_location
-gcloud storage buckets add-iam-policy-binding gs://$setup_gcs --member=$runner_principal --role=roles/storage.legacyBucketWriter
+gcloud storage buckets add-iam-policy-binding gs://$setup_gcs --member=$runner_principal --role=roles/storage.objectUser
 # {% endif %}
