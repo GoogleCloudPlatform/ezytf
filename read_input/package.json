@@ -16,7 +16,7 @@
     "@google-cloud/functions-framework": "^3.4.5",
     "@google-cloud/local-auth": "^3.0.1",
     "@google-cloud/resource-manager": "^5.3.0",
-    "@google-cloud/storage": "^7.15.1",
+    "@google-cloud/storage": "^7.19.0",
     "googleapis": "^144.0.0",
     "js-yaml": "^4.1.0"
   },
