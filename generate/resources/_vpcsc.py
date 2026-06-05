@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf_cdktf_provider_google.access_context_manager_access_policy import (
+from imports.google.access_context_manager_access_policy import (
     AccessContextManagerAccessPolicy,
 )
 from imports.sc_access_level import ScAccessLevel

@@ -13,9 +13,9 @@
 # limitations under the License.
 
 
-from cdktf_cdktf_provider_google.vertex_ai_dataset import VertexAiDataset
-from cdktf_cdktf_provider_google.vertex_ai_endpoint import VertexAiEndpoint
-from cdktf_cdktf_provider_google.vertex_ai_deployment_resource_pool import (
+from imports.google.vertex_ai_dataset import VertexAiDataset
+from imports.google.vertex_ai_endpoint import VertexAiEndpoint
+from imports.google.vertex_ai_deployment_resource_pool import (
     VertexAiDeploymentResourcePool,
     VertexAiDeploymentResourcePoolDedicatedResourcesAutoscalingMetricSpecsList,
 )

@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf_cdktf_provider_google.dialogflow_cx_agent import DialogflowCxAgent
-from cdktf_cdktf_provider_google.dialogflow_cx_webhook import DialogflowCxWebhook
+from imports.google.dialogflow_cx_agent import DialogflowCxAgent
+from imports.google.dialogflow_cx_webhook import DialogflowCxWebhook
 
-from cdktf_cdktf_provider_google.dialogflow_cx_entity_type import (
+from imports.google.dialogflow_cx_entity_type import (
     DialogflowCxEntityType,
     DialogflowCxEntityTypeEntities,
     DialogflowCxEntityTypeExcludedPhrases,
 )
 
-from cdktf_cdktf_provider_google.dialogflow_cx_intent import (
+from imports.google.dialogflow_cx_intent import (
     DialogflowCxIntent,
     DialogflowCxIntentParameters,
     DialogflowCxIntentTrainingPhrases,
@@ -29,13 +29,13 @@ from cdktf_cdktf_provider_google.dialogflow_cx_intent import (
 )
 
 
-from cdktf_cdktf_provider_google.dialogflow_cx_flow import (
+from imports.google.dialogflow_cx_flow import (
     DialogflowCxFlow,
     DialogflowCxFlowEventHandlers,
     DialogflowCxFlowTransitionRoutes,
 )
 
-from cdktf_cdktf_provider_google.dialogflow_cx_page import (
+from imports.google.dialogflow_cx_page import (
     DialogflowCxPage,
     DialogflowCxPageEventHandlers,
     DialogflowCxPageFormParameters,
@@ -128,7 +128,7 @@ def generate_cx_intent(self, my_resource, resource):
 
 
 
-# cdktf_cdktf_provider_google.dialogflow_cx_flow
+# imports.google.dialogflow_cx_flow
 # event_handlers
 # event_handlers_trigger_fulfillment_conditional_cases
 # event_handlers_trigger_fulfillment_messages
@@ -161,7 +161,7 @@ def generate_cx_flow(self, my_resource, resource):
         create_cx_flow(self, data)
 
 
-# cdktf_cdktf_provider_google.dialogflow_cx_page
+# imports.google.dialogflow_cx_page
 # entry_fulfillment_conditional_cases
 # entry_fulfillment_messages
 # entry_fulfillment_set_parameter_actions

@@ -214,7 +214,7 @@ function groupNats(networks) {
   for (const nw of networks) {
     let obj = {
       network: nw.network_name,
-      project: nw.project_id,
+      project_id: nw.project_id,
     };
     for (let [region, subnets] of Object.entries(nw.nats)) {
       if ("region" in subnets) {

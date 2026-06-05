@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf_cdktf_provider_google.compute_external_vpn_gateway import (
+from imports.google.compute_external_vpn_gateway import (
     ComputeExternalVpnGateway,
     ComputeExternalVpnGatewayInterface,
 )

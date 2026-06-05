@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf_cdktf_provider_google import compute_instance as ce
-from cdktf_cdktf_provider_google.compute_disk import (
+from imports.google import compute_instance as ce
+from imports.google.compute_disk import (
     ComputeDisk,
     ComputeDiskGuestOsFeatures,
 )
@@ -100,6 +100,7 @@ def create_instance_template(self, cit):
 
 def create_instance_from_template(self, ift):
     "create instance from template"
+    ift["project_id"] = self.tf_ref("project", ift["project_id"])
     ift_name = ift["hostname"]
     if ift.get("network"):
         ift["network"] = self.tf_ref("network", ift["network"])

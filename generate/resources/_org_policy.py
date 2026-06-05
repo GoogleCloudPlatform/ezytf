@@ -16,7 +16,7 @@ from cdktf import (
     TerraformLocal,
 )
 from imports.org_policy_v2 import OrgPolicyV2
-from cdktf_cdktf_provider_google.org_policy_custom_constraint import (
+from imports.google.org_policy_custom_constraint import (
     OrgPolicyCustomConstraint,
 )
 import util

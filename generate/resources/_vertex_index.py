@@ -13,9 +13,9 @@
 # limitations under the License.
 
 
-from cdktf_cdktf_provider_google.vertex_ai_index import VertexAiIndex
-from cdktf_cdktf_provider_google.vertex_ai_index_endpoint import VertexAiIndexEndpoint
-from cdktf_cdktf_provider_google.vertex_ai_index_endpoint_deployed_index import (
+from imports.google.vertex_ai_index import VertexAiIndex
+from imports.google.vertex_ai_index_endpoint import VertexAiIndexEndpoint
+from imports.google.vertex_ai_index_endpoint_deployed_index import (
     VertexAiIndexEndpointDeployedIndex,
 )
 

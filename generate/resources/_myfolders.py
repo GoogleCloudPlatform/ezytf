@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections import deque
-from cdktf_cdktf_provider_google.folder import Folder
+from imports.google.folder import Folder
 from imports.ff_folder import FfFolder
 import util
 
@@ -57,7 +57,7 @@ def generate_folders(self, my_resource, resource):
 
 def create_ff_folder(self, folder):
     parent = folder.get("parent")
-    node_type = self.which_node(parent)
+    node_type = self.which_nodes(parent)
     folder["parent"] = self.tf_ref(node_type, parent)
     folder_path = f"{parent}/{folder.get('name', folder.get('id'))}"
 
