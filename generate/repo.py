@@ -38,7 +38,7 @@ def code_push_remote(repo_name, repo_folder, git_uri):
         util.upload_folder_to_gcs_parallel(OUTPUT_BUCKET, repo_folder, gcs_prefix)
 
     if SSM_HOST and not git_uri:
-        git_uri = util.ssm_repository(repo_name, SSM_HOST)
+        git_uri = util.api_ssm_repository(repo_name, SSM_HOST)
 
     if git_uri:
         util.push_folder_to_git(repo_folder, git_uri, "auto", GIT_PVT_KEY_FILE)

@@ -24,32 +24,32 @@
     {
       "name": "network",
       "source": "terraform-google-modules/network/google",
-      "version": "~> 18.0.0"
+      "version": "~> 18.1.1"
     },
     {
       "name": "fabric_net_svpc_access",
       "source": "terraform-google-modules/network/google//modules/fabric-net-svpc-access",
-      "version": "~> 18.0.0"
+      "version": "~> 18.1.1"
     },
     {
       "name": "network_peering",
       "source": "terraform-google-modules/network/google//modules/network-peering",
-      "version": "~> 18.0.0"
+      "version": "~> 18.1.1"
     },
     {
       "name": "firewall_rules",
       "source": "terraform-google-modules/network/google//modules/firewall-rules",
-      "version": "~> 18.0.0"
+      "version": "~> 18.1.1"
     },
     {
       "name": "firewall_policy_rh",
       "source": "terraform-google-modules/network/google//modules/hierarchical-firewall-policy",
-      "version": "~> 18.0.0"
+      "version": "~> 18.1.1"
     },
     {
       "name": "firewall_policy_nw",
       "source": "terraform-google-modules/network/google//modules/network-firewall-policy",
-      "version": "~> 18.0.0"
+      "version": "~> 18.1.1"
     },
     {
       "name": "log_export",
@@ -104,22 +104,22 @@
     {
       "name": "gke",
       "source": "terraform-google-modules/kubernetes-engine/google",
-      "version": "~> 44.0.0"
+      "version": "~> 44.2.0"
     },
     {
       "name": "gke_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-private-cluster",
-      "version": "~> 44.0.0"
+      "version": "~> 44.2.0"
     },
     {
       "name": "gke_autopilot",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-public-cluster",
-      "version": "~> 44.0.0"
+      "version": "~> 44.2.0"
     },
     {
       "name": "gke_autopilot_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-private-cluster",
-      "version": "~> 44.0.0"
+      "version": "~> 44.2.0"
     },
     {
       "name": "sc_access_level",
@@ -144,42 +144,42 @@
     {
       "name": "pgsql",
       "source": "terraform-google-modules/sql-db/google//modules/postgresql",
-      "version": "~> 28.0.1"
+      "version": "~> 28.1.0"
     },
     {
       "name": "mysql",
       "source": "terraform-google-modules/sql-db/google//modules/mysql",
-      "version": "~> 28.0.1"
+      "version": "~> 28.1.0"
     },
     {
       "name": "mssql",
       "source": "terraform-google-modules/sql-db/google//modules/mssql",
-      "version": "~> 28.0.1"
+      "version": "~> 28.1.0"
     },
     {
       "name": "psa",
       "source": "terraform-google-modules/sql-db/google//modules/private_service_access",
-      "version": "~> 28.0.1"
+      "version": "~> 28.1.0"
     },
     {
       "name": "instance_from_template",
       "source": "terraform-google-modules/vm/google//modules/compute_instance",
-      "version": "~> 15.1.0"
+      "version": "~> 15.2.1"
     },
     {
       "name": "instance_template",
       "source": "terraform-google-modules/vm/google//modules/instance_template",
-      "version": "~> 15.1.0"
+      "version": "~> 15.2.1"
     },
     {
       "name": "mig",
       "source": "terraform-google-modules/vm/google//modules/mig",
-      "version": "~> 15.1.0"
+      "version": "~> 15.2.1"
     },
     {
       "name": "umig",
       "source": "terraform-google-modules/vm/google//modules/umig",
-      "version": "~> 15.1.0"
+      "version": "~> 15.2.1"
     },
     {
       "name": "bigquery",
@@ -276,7 +276,6 @@
     }
   ],
   "terraformProviders": [
-    "hashicorp/googleworkspace@~> 0.7",
-    "hashicorp/google@~> 7.35"
+    "hashicorp/googleworkspace@~> 0.7"
   ]
 }

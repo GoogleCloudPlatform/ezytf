@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf import (
+from cdktn import (
     TerraformLocal,
 )
 from imports.org_policy_v2 import OrgPolicyV2
-from imports.google.org_policy_custom_constraint import (
+from cdktn_provider_google.org_policy_custom_constraint import (
     OrgPolicyCustomConstraint,
 )
 import util

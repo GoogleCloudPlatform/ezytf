@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf import (
+from cdktn import (
     TerraformIterator,
     Token,
 )
-from imports.google.project_service import ProjectService
+from cdktn_provider_google.project_service import ProjectService
 from imports.project_services import ProjectServices
 
 

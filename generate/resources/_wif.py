@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google.iam_workforce_pool import (
+from cdktn_provider_google.iam_workforce_pool import (
     IamWorkforcePool,
     IamWorkforcePoolAccessRestrictionsAllowedServices,
 )
-from imports.google.iam_workforce_pool_provider import (
+from cdktn_provider_google.iam_workforce_pool_provider import (
     IamWorkforcePoolProvider,
 )
-from imports.google.iam_workload_identity_pool import (
+from cdktn_provider_google.iam_workload_identity_pool import (
     IamWorkloadIdentityPool,
 )
-from imports.google.iam_workload_identity_pool_provider import (
+from cdktn_provider_google.iam_workload_identity_pool_provider import (
     IamWorkloadIdentityPoolProvider,
     IamWorkloadIdentityPoolProviderX509TrustStoreTrustAnchors,
     IamWorkloadIdentityPoolProviderX509TrustStoreIntermediateCas,

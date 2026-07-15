@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# from imports.google.data_google_compute_network import DataGoogleComputeNetwork
+# from cdktn_provider_google.data_google_compute_network import DataGoogleComputeNetwork
 import util
 
 
 def data_function(name: str):
     provider = name.split("_")[0]
     method_name = util.pascal_case(f"data_{name}")
-    module = __import__(f"cdktf_cdktf_provider_{provider}.data_{name}")
+    module = __import__(f"cdktn_provider_{provider}.data_{name}")
     func = getattr(module, method_name)
     return func
 

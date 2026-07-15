@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import hashlib
-from cdktf import TerraformLocal, Fn
-from imports.google.data_google_service_account_access_token import (
+from cdktn import TerraformLocal, Fn
+from cdktn_provider_google.data_google_service_account_access_token import (
     DataGoogleServiceAccountAccessToken,
 )
 from imports.googleworkspace.provider import GoogleworkspaceProvider

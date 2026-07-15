@@ -15,12 +15,12 @@
 import re
 from typing import Any
 from constructs import Construct
-from cdktf import (
+from cdktn import (
     TerraformStack,
     TerraformVariable,
     GcsBackend,
 )
-from imports.google.provider import GoogleProvider
+from cdktn_provider_google.provider import GoogleProvider
 import util
 from ._users import generate_users
 from ._group import generate_groups, generate_ff_groups
@@ -371,7 +371,7 @@ class MyStack(TerraformStack):
             res_name = "_".join([res_name] + nested_params)
         method_name = util.pascal_case(res_name)
         module = __import__(
-            f"cdktf_cdktf_provider_{provider}.{res_name}", fromlist=[res_name]
+            f"cdktn_provider_{provider}.{res_name}", fromlist=[res_name]
         )
         func = getattr(module, method_name)
         return func, res_name

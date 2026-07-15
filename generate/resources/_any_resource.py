@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# from imports.google.compute_network import ComputeNetwork
+# from cdktn_provider_google.compute_network import ComputeNetwork
 import util
 
 

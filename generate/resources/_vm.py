@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imports.google import compute_instance as ce
-from imports.google.compute_disk import (
+from cdktn_provider_google import compute_instance as ce
+from cdktn_provider_google.compute_disk import (
     ComputeDisk,
     ComputeDiskGuestOsFeatures,
 )

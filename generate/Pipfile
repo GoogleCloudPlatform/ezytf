@@ -7,12 +7,13 @@ verify_ssl = true
 python_version = "3"
 
 [packages]
-cdktf = "*"
+cdktn = "*"
 pyyaml = "*"
 pytest = "*"
 google-cloud-storage = "*"
 GitPython = "*"
-cdktf-cdktf-provider-null = "*"
+cdktn-provider-google = "*"
+cdktn-provider-null = "*"
 jinja2 = "*"
 google-cloud-securesourcemanager = "*"
 

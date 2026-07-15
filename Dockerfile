@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.13-slim
+FROM python:3.14-slim
 
-ARG CDKTF_VERSION='0.21.00'
+ARG CDKTN_VERSION='0.23.3'
 ARG TF_VERSION='1.14.9'
-ARG NODE_VERSION="v20.19.1"
+ARG NODE_VERSION="v22.15.0"
 
 LABEL name="ezy"
 
@@ -44,7 +44,8 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && tar -xJf "node-${NODE_VERSION}-linux-$ARCH.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
   && rm "node-${NODE_VERSION}-linux-$ARCH.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs
-RUN corepack enable yarn
+RUN corepack enable yarn && \
+  npm install --global cdktn-cli@latest
 
 RUN pip install -U pip pipenv
 
@@ -54,31 +55,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends git wget unzip 
 WORKDIR /app
 
 RUN wget -O terraform.zip https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip && \
-	unzip -o terraform.zip  && \
-	rm terraform.zip  && \
-	mv terraform /usr/local/bin/ 
+  unzip -o terraform.zip  && \
+  rm terraform.zip  && \
+  mv terraform /usr/local/bin/ 
 
 # gcloud installation
 RUN wget -O /tmp/google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz && \
-	mkdir -p /usr/local/gcloud && \
-	tar -C /usr/local/gcloud -xf /tmp/google-cloud-sdk.tar.gz && \
-	rm /tmp/google-cloud-sdk.tar.gz && \
-	/usr/local/gcloud/google-cloud-sdk/install.sh --quiet
-ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
+  mkdir -p /usr/local/gcloud && \
+  tar -C /usr/local/gcloud -xf /tmp/google-cloud-sdk.tar.gz && \
+  rm /tmp/google-cloud-sdk.tar.gz && \
+  /usr/local/gcloud/google-cloud-sdk/install.sh --quiet
+ENV PATH=$PATH:/usr/local/gcloud/google-cloud-sdk/bin
+
+RUN git config --global --add safe.directory '*' && \
+  git config --global credential.'https://*.*.sourcemanager.dev'.helper gcloud.sh
 
 RUN mkdir -p /app/generate && mkdir -p /app/read_input
 
-COPY ./generate/Pipfile ./generate/Pipfile.lock ./generate/cdktf.json ./generate/
-RUN npm install --global cdktf-cli@latest && \
-	cd generate && pipenv install --system && \
-	cdktf get
-
+# 1. Install Node.js dependencies
 COPY read_input/package.json ./read_input/
 RUN cd read_input && npm install --omit=dev
 
+# 2. Install Python dependencies
+COPY ./generate/Pipfile ./generate/Pipfile.lock ./generate/
+RUN cd generate && pipenv install --system
+
+# 3. CDKTN schemas / code generation
+COPY ./generate/cdktf.json ./generate/
+RUN cd generate && cdktn get
+
+# 4. Copy the rest of the application files
 COPY . .
-RUN git config --global --add safe.directory '*'
-RUN git config --global credential.'https://*.*.sourcemanager.dev'.helper gcloud.sh
 
 # CMD ["/bin/bash", "generator.sh"]
 CMD ["npm", "start", "--prefix", "read_input"]

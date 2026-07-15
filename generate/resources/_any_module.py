@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf import TerraformHclModule
+from cdktn import TerraformHclModule
 import util
 
 

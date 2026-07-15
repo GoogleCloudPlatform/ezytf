@@ -13,18 +13,18 @@
 # limitations under the License.
 
 
-from imports.google.discovery_engine_data_store import (
+from cdktn_provider_google.discovery_engine_data_store import (
     DiscoveryEngineDataStore,
     DiscoveryEngineDataStoreDocumentProcessingConfigParsingConfigOverrides,
 )
-from imports.google.discovery_engine_search_engine import (
+from cdktn_provider_google.discovery_engine_search_engine import (
     DiscoveryEngineSearchEngine,
 )
-from imports.google.discovery_engine_chat_engine import (
+from cdktn_provider_google.discovery_engine_chat_engine import (
     DiscoveryEngineChatEngine,
 )
-from imports.google.discovery_engine_schema import DiscoveryEngineSchema
-from imports.google.discovery_engine_target_site import (
+from cdktn_provider_google.discovery_engine_schema import DiscoveryEngineSchema
+from cdktn_provider_google.discovery_engine_target_site import (
     DiscoveryEngineTargetSite,
 )
 

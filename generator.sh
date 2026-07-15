@@ -26,6 +26,6 @@ if [[ "${EZTF_MODE}" != "workflow" ]]; then
 fi
 
 if [[ "${EZTF_MODE}" == "workflow" ]]; then
-    cd generate && cdktf synth --hcl &&
+    cd generate && cdktn synth --hcl &&
         python repo.py
 fi

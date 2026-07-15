@@ -203,7 +203,6 @@ async function generateTF(
     pvtKeyFile = `/tmp/pvt_key_${customer}_${generateRandomId()}`;
     writeFile(pvtKeyFile, formatPrivateKeyBody(gitPvtKey), { mode: keyFilePermissions });
   }
-  // if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE 2>/dev/null ; fi && \
   let generateScript = `export EZTF_INPUT_CONFIG=${eztfInputConfigFile} && \
     export EZTF_IS_TF=${anyTfStack} && \
     export EZTF_CDK_OUTPUT_DIR=${customer} && \
@@ -212,9 +211,10 @@ async function generateTF(
     export EZTF_OUTPUT_BUCKET=${outputBucket} && \
     export EZTF_OUTPUT_GCS_PREFIX=${outputGcsPrefix} && \
     export EZTF_PVT_KEY_FILE=${pvtKeyFile} && \
+    if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE 2>/dev/null ; fi && \
     cd ../generate && \
     
-    if [ "\${EZTF_IS_TF}" = "true" ]; then cdktf synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null ; fi && \
+    if [ "\${EZTF_IS_TF}" = "true" ]; then cdktn synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null ; fi && \
     python -W ignore repo.py`;
   // console.log(generateScript)
   if (asyncGenerate) {
