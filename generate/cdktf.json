@@ -14,42 +14,42 @@
     {
       "name": "project-factory",
       "source": "terraform-google-modules/project-factory/google",
-      "version": "~> 18.2.0"
+      "version": "~> 18.3.0"
     },
     {
       "name": "project_services",
       "source": "terraform-google-modules/project-factory/google//modules/project_services",
-      "version": "~> 18.2.0"
+      "version": "~> 18.3.0"
     },
     {
       "name": "network",
       "source": "terraform-google-modules/network/google",
-      "version": "~> 18.1.1"
+      "version": "~> 18.1.2"
     },
     {
       "name": "fabric_net_svpc_access",
       "source": "terraform-google-modules/network/google//modules/fabric-net-svpc-access",
-      "version": "~> 18.1.1"
+      "version": "~> 18.1.2"
     },
     {
       "name": "network_peering",
       "source": "terraform-google-modules/network/google//modules/network-peering",
-      "version": "~> 18.1.1"
+      "version": "~> 18.1.2"
     },
     {
       "name": "firewall_rules",
       "source": "terraform-google-modules/network/google//modules/firewall-rules",
-      "version": "~> 18.1.1"
+      "version": "~> 18.1.2"
     },
     {
       "name": "firewall_policy_rh",
       "source": "terraform-google-modules/network/google//modules/hierarchical-firewall-policy",
-      "version": "~> 18.1.1"
+      "version": "~> 18.1.2"
     },
     {
       "name": "firewall_policy_nw",
       "source": "terraform-google-modules/network/google//modules/network-firewall-policy",
-      "version": "~> 18.1.1"
+      "version": "~> 18.1.2"
     },
     {
       "name": "log_export",
@@ -94,32 +94,32 @@
     {
       "name": "vpn",
       "source": "terraform-google-modules/vpn/google",
-      "version": "~> 6.1.0"
+      "version": "~> 7.0.0"
     },
     {
       "name": "vpn_ha",
       "source": "terraform-google-modules/vpn/google//modules/vpn_ha",
-      "version": "~> 6.1.0"
+      "version": "~> 7.0.0"
     },
     {
       "name": "gke",
       "source": "terraform-google-modules/kubernetes-engine/google",
-      "version": "~> 44.2.0"
+      "version": "~> 44.3.0"
     },
     {
       "name": "gke_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-private-cluster",
-      "version": "~> 44.2.0"
+      "version": "~> 44.3.0"
     },
     {
       "name": "gke_autopilot",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-public-cluster",
-      "version": "~> 44.2.0"
+      "version": "~> 44.3.0"
     },
     {
       "name": "gke_autopilot_private",
       "source": "terraform-google-modules/kubernetes-engine/google//modules/beta-autopilot-private-cluster",
-      "version": "~> 44.2.0"
+      "version": "~> 44.3.0"
     },
     {
       "name": "sc_access_level",
