@@ -15,8 +15,8 @@
 FROM python:3.14-slim
 
 ARG CDKTN_VERSION='0.23.3'
-ARG TF_VERSION='1.14.9'
-ARG NODE_VERSION="v22.15.0"
+ARG TF_VERSION='1.15.9'
+ARG NODE_VERSION="v24.19.0"
 
 LABEL name="ezy"
 
@@ -45,7 +45,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && rm "node-${NODE_VERSION}-linux-$ARCH.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 RUN corepack enable yarn && \
-  npm install --global cdktn-cli@latest
+  npm install --global cdktn-cli@${CDKTN_VERSION}
 
 RUN pip install -U pip pipenv
 

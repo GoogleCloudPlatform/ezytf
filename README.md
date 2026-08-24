@@ -38,6 +38,24 @@ flowchart LR
     Sheet --> |API / <br >App scripts <br> Trigger| Read --> Yaml  -. cloud workflow <br> trigger.-> Generate --> Output
 ```
 
+### Quick Start with Makefile & `.env`
+
+The easiest way to build, run, and deploy `ezytf` is using the included [`Makefile`](Makefile) and [`.env.example`](.env.example).
+
+```bash
+# 1. Copy the example environment file and customize your settings
+cp .env.example .env
+
+# 2. View all available make targets
+make help
+
+# 3. Build, run, or deploy
+make build                  # Build Docker image
+make run-docker             # Run in Docker locally (HTTP service on port 8080)
+make run-local              # Run locally without Docker
+make deploy-cloud-run       # Deploy to Cloud Run Service
+```
+
 ### Environment Variables
 
 | Variable           | Description                                                                    | Required |
@@ -77,14 +95,30 @@ cd generate && pipenv install
 
 ### Run Locally
 
+**Using Makefile:**
+```bash
+# Script mode (without Docker)
+make run-local-script
+
+# Service mode (without Docker, HTTP on port 8080)
+make run-local
 ```
+
+**Manual:**
+```bash
 export EZTF_SHEET_ID=[EZTF_SHEET_ID]
 ./generator.sh
 ```
 
 ### Run locally https mode
 
+**Using Makefile:**
+```bash
+make run-local
 ```
+
+**Manual:**
+```bash
 npm start --prefix read_input
 curl localhost:8080  -d '{"spreadsheetId":"$EZTF_SHEET_ID", "generateCode":true}' -H "Content-Type: application/json"
 curl localhost:8080  -d '{"ezytfConfigGcsPath":"gs://BUCKET/OBJECT_PATH", "generateCode":true}' -H "Content-Type: application/json"
@@ -93,13 +127,27 @@ curl localhost:8080  -d '{"configContent":"'$(base64 -w 0 CONFIG_FILE_PATH)'",  
 
 ### Build Locally
 
+**Using Makefile:**
+```bash
+make build
 ```
+
+**Manual:**
+```bash
 docker build -t ezytf:latest . -f Dockerfile
 ```
 
 ### Run Container Locally (as service)
 
+**Using Makefile:**
+```bash
+make run-docker
+# Or for interactive bash shell:
+make run-docker-interactive
 ```
+
+**Manual:**
+```bash
 PORT=8080 && \
 ADC=~/.config/gcloud/application_default_credentials.json && \
 docker run -p 9090:${PORT} \
@@ -116,15 +164,15 @@ ezytf:latest
 
 ### Setup Prerequisite
 
-```
+```bash
 gcloud beta source-manager instances create $SSM_INSTANCE_ID --region=$SSM_REGION  --project=$PROJECT_ID
 ```
 
-```
+```bash
 EZTF_SSM_HOST=https://SSM_INSTANCE_ID-PROJECT_NUMBER.SSM_REGION.sourcemanager.dev
 ```
 
-```
+```bash
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF_SERVICE_ACCOUNT --role='roles/securesourcemanager.instanceRepositoryCreator'
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF_SERVICE_ACCOUNT --role='roles/securesourcemanager.repoCreator'
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF_SERVICE_ACCOUNT --role='roles/securesourcemanager.repoWriter'
@@ -132,7 +180,13 @@ gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$EZTF
 
 ### Push Container
 
+**Using Makefile:**
+```bash
+make push
 ```
+
+**Manual:**
+```bash
 export ARTIFACT_REGISTRY_PATH=us-docker.pkg.dev/[PROJECT_ID]/[REPO_NAME]/ezytf
 docker tag ezytf:latest $ARTIFACT_REGISTRY_PATH/ezytf:latest . -f Dockerfile && \
 docker push $ARTIFACT_REGISTRY_PATH/ezytf:latest
@@ -140,7 +194,13 @@ docker push $ARTIFACT_REGISTRY_PATH/ezytf:latest
 
 ### Deploy Cloud Run Service (Service mode)
 
+**Using Makefile:**
+```bash
+make deploy-cloud-run
 ```
+
+**Manual:**
+```bash
 gcloud run deploy ezytf --region [REGION] --image=$ARTIFACT_REGISTRY_PATH/ezytf:latest \
 --memory 2Gi \
 --cpu 1000m \
@@ -156,7 +216,7 @@ gcloud run deploy ezytf --region [REGION] --image=$ARTIFACT_REGISTRY_PATH/ezytf:
 
 ### Deploy read_input Cloud Function (Workflow Mode)
 
-```
+```bash
 cd read_input && \
 gcloud functions deploy ezytf-read-input \
 --gen2 \
@@ -171,7 +231,13 @@ gcloud functions deploy ezytf-read-input \
 
 ### Deploy generate Cloud Run Job (Workflow Mode)
 
+**Using Makefile:**
+```bash
+make deploy-cloud-run-job
 ```
+
+**Manual:**
+```bash
 gcloud run jobs deploy ezytf-generate --region [REGION] --image=$ARTIFACT_REGISTRY_PATH/ezytf:latest \
 --memory 2Gi \
 --cpu 1000m \

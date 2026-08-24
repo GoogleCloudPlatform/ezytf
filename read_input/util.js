@@ -18,7 +18,7 @@ import { Storage } from "@google-cloud/storage";
 import { ProjectsClient } from "@google-cloud/resource-manager";
 import fs from "fs";
 import path from "path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { exec, execSync } from "node:child_process";
 
 export {

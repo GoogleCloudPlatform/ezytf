@@ -84,7 +84,7 @@
     {
       "name": "org_policy_v2",
       "source": "terraform-google-modules/org-policy/google//modules/org_policy_v2",
-      "version": "~> 7.2.0"
+      "version": "~> 7.3.0"
     },
     {
       "name": "cloud-router",
@@ -124,17 +124,17 @@
     {
       "name": "sc_access_level",
       "source": "terraform-google-modules/vpc-service-controls/google//modules/access_level",
-      "version": "~> 8.0.0"
+      "version": "~> 8.1.0"
     },
     {
       "name": "sc_perimeter_bridge",
       "source": "terraform-google-modules/vpc-service-controls/google//modules/bridge_service_perimeter",
-      "version": "~> 8.0.0"
+      "version": "~> 8.1.0"
     },
     {
       "name": "sc_perimeter",
       "source": "terraform-google-modules/vpc-service-controls/google//modules/regular_service_perimeter",
-      "version": "~> 8.0.0"
+      "version": "~> 8.1.0"
     },
     {
       "name": "kms",

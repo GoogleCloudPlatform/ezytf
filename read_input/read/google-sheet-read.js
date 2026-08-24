@@ -19,7 +19,6 @@ import {
   setRangeDataByName,
   formatHeaderData,
 } from "../format.js";
-import { GoogleAuth } from "google-auth-library";
 import { google } from "googleapis";
 export { readSheetRanges };
 
@@ -31,7 +30,7 @@ const SCOPES = [
 const selectedRangeName = "tfgenerate";
 
 async function readSheetRanges(eztf, spreadsheetId) {
-  const auth = new GoogleAuth({
+  const auth = new google.auth.GoogleAuth({
     scopes: SCOPES,
   });
 
