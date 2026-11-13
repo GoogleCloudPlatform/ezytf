@@ -28,9 +28,10 @@ import google.oauth2.credentials
 import google.auth.transport.requests
 from google.cloud import storage
 from google.cloud.storage import transfer_manager
+from google.cloud import securesourcemanager_v1 as ssm
 from git import Repo
 import requests
-import jinja2
+from jinja2.sandbox import ImmutableSandboxedEnvironment
 
 RANDOM_WORD = "gcp-cdk-tf-id_"
 TF_SINGLE_OUT = "cdktf.out/stacks/{stack_name}/cdk.tf"
@@ -48,7 +49,16 @@ continent_short_name = {
 DIR_REGEX = r"(n)orth|(s)outh|(e)ast|(w)est|(c)entral"
 DIR_SUBS = "\\1\\2\\3\\4\\5"
 
-jinja_env = jinja2.Environment()
+jinja_env = ImmutableSandboxedEnvironment()  # anyfile content is user supplied
+
+
+def safe_join(base_dir, *paths):
+    """joins paths under base_dir, raises ValueError if the result escapes base_dir"""
+    path = os.path.normpath(os.path.join(base_dir, *paths))
+    base, real_path = os.path.realpath(base_dir), os.path.realpath(path)
+    if real_path == base or os.path.commonpath([base, real_path]) != base:
+        raise ValueError(f"unsafe path {path!r}, escapes {base_dir!r}")
+    return path
 
 
 def cdktf_output(stack_name, output_folder="cdktf.out"):
@@ -63,10 +73,12 @@ def clean_principal_id(name: str) -> str:
 
 
 def clean_res_id(name):
-    """returns resource id name lowercase and hypen"""
-    return name.lower().replace(".", "-").replace("_", "-")
+    """returns resource id name lowercase and hypen, same as cleanRes in read_input/util.js"""
+    return re.sub(r"[^a-z0-9-]", "-", name.strip().lower())
 
-_find_unsafe = re.compile(r'[^\w@$%+=:,./-]', re.ASCII).search
+
+_find_unsafe = re.compile(r"[^\w@$%+=:,./-]", re.ASCII).search
+
 
 def shell_quote(s):
     """Return a shell-escaped version of the string *s*."""
@@ -78,6 +90,7 @@ def shell_quote(s):
     if _find_unsafe(s) is None:
         return s
     return "'" + s.replace("'", "'\"'\"'") + "'"
+
 
 def lower(name):
     """return lower case name replaces with underscore"""
@@ -253,12 +266,13 @@ def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
 
 def download_from_gcs(bucket_name, source_blob_name):
     """Downloads a blob from the bucket."""
+    local_file = safe_join(os.getcwd(), source_blob_name)
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(source_blob_name)
-    os.makedirs(os.path.dirname(source_blob_name), exist_ok=True)
-    blob.download_to_filename(source_blob_name)
-    print(f"Blob {source_blob_name} downloaded to {source_blob_name}.")
+    os.makedirs(os.path.dirname(local_file), exist_ok=True)
+    blob.download_to_filename(local_file)
+    print(f"Blob {source_blob_name} downloaded to {local_file}.")
     contents = blob.download_as_string().decode("utf-8")
     return contents
 
@@ -402,7 +416,7 @@ def split_tf_file(input_file, output_folder):
         j += 1
         filename = filename or f"file_{j}"
         filename = f"{filename}.tf"
-        output_file = os.path.join(output_folder, filename)
+        output_file = safe_join(output_folder, filename)
         output_files.append(filename)
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(tfdata)
@@ -424,7 +438,45 @@ def ssm_url_extract(url):
 
 
 def ssm_repository(repo_name, ssm_url):
-    """Lists repositories in a Secure Source Manager instance using the requests library."""
+    """Checks & Creates repositoriy in a Secure Source Manager instance using SDK."""
+
+    instance_id, project_number, location = ssm_url_extract(ssm_url)
+    repo_parent = f"projects/{project_number}/locations/{location}"
+    repo_id = f"{repo_parent}/repositories/{repo_name}"
+    instance_path = f"{repo_parent}/instances/{instance_id}"
+
+    client = ssm.SecureSourceManagerClient()
+
+    list_request = ssm.ListRepositoriesRequest(
+        parent=repo_parent, instance=instance_path
+    )
+    page_result = client.list_repositories(request=list_request)
+
+    for response in page_result:
+        if response.name == repo_id:
+            print(f"git repo present, skipping creation {response.uris.git_https}")
+            return response.uris.git_https
+
+    # create repository
+    create_request = ssm.CreateRepositoryRequest(
+        parent=repo_parent,
+        repository=ssm.Repository(instance=instance_path),
+        repository_id=repo_name,
+    )
+    operation = client.create_repository(request=create_request)
+    response = operation.result()
+
+    created_repo = ""
+    try:
+        created_repo = response.uris.git_https
+        print(f"ssm git repo created {created_repo}")
+    except AttributeError:
+        print("create repository failed", response)
+    return created_repo
+
+
+def api_ssm_repository(repo_name, ssm_url):
+    """Checks & Creates repositoriy in a Secure Source Manager instance using the requests library."""
 
     instance_id, project_number, location = ssm_url_extract(ssm_url)
     access_token = get_access_token()
@@ -473,7 +525,7 @@ def ssm_repository(repo_name, ssm_url):
     return created_repo
 
 
-def push_folder_to_git(repo_path, remote_url, branch_name="main"):
+def push_folder_to_git(repo_path, remote_url, branch_name="main", key_file=""):
     """Pushes the contents of an existing folder to a Git repository.
 
     Args:
@@ -481,6 +533,11 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
         remote_url: The URL of the remote git repository (e.g., "https://github.com/your-username/your-repo.git").
         branch_name: The branch to push to (defaults to "main").
     """
+
+    key_file_str = ""
+    if key_file:
+        key_file_str = f"-i {key_file}"
+    ssh_cmd = f'ssh {key_file_str} -o "StrictHostKeyChecking no"'
 
     repo = Repo.init(repo_path)
 
@@ -497,13 +554,13 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
     if "origin" not in repo.remotes:
         repo.create_remote("origin", remote_url)
 
-    origin = repo.remotes.origin
     r = re.compile(r"refs/tags/0\.(\d+)-auto")
-    max_tag = 0
     # below command returns
     # 0206504b3460ac4e63e28461c525a3708f20a960        refs/tags/0.1-auto
-    rem_tag = repo.git.ls_remote("--tags", "origin", "0.*-auto").strip()
+    with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+        rem_tag = repo.git.ls_remote("--tags", "origin", "0.*-auto").strip()
 
+    max_tag = 0
     for tagline in rem_tag.split("\n"):
         tagl = tagline.strip().split()
         if len(tagl) < 2:
@@ -514,11 +571,13 @@ def push_folder_to_git(repo_path, remote_url, branch_name="main"):
     max_tag += 1
     tag = f"0.{max_tag}-auto"
     repo.create_tag(tag)
-    origin.push(
-        refspec=[f"{branch_name}:{branch_name}", f"{tag}:{tag}"],
-        force=True,
-        atomic=True,
-    )
+
+    with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+        repo.remotes.origin.push(
+            refspec=[f"{branch_name}:{branch_name}", f"{tag}:{tag}"],
+            force=True,
+            atomic=True,
+        )
     print(f"Successfully pushed branch {branch_name} & tag {tag} to {remote_url}")
 
 
@@ -573,12 +632,12 @@ def python_to_bash_vars(vars, export=False):
             # Note: Both keys and values are converted to strings and quoted.
             items_str = []
             for k, v in value.items():
-                items_str.append(
-                    f"[{shlex.quote(bash_str(k))}]={shell_quote(v)}"
-                )
+                items_str.append(f"[{shlex.quote(bash_str(k))}]={shell_quote(v)}")
             bash_commands.append(f"declare -A {name}=({' '.join(items_str)})")
         else:
-            print(f"Unsupported '{name}': {type(value)}. Only str, list, dict are supported")
+            print(
+                f"Unsupported '{name}': {type(value)}. Only str, list, dict are supported"
+            )
 
     output_string = "\n".join(bash_commands)
     return output_string

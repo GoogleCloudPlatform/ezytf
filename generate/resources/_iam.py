@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf import (
+from cdktn import (
     TerraformIterator,
     Token,
 )
-from cdktf_cdktf_provider_google.organization_iam_member import OrganizationIamMember
-from cdktf_cdktf_provider_google.folder_iam_member import FolderIamMember
-from cdktf_cdktf_provider_google.project_iam_member import ProjectIamMember
+from cdktn_provider_google.organization_iam_member import OrganizationIamMember
+from cdktn_provider_google.folder_iam_member import FolderIamMember
+from cdktn_provider_google.project_iam_member import ProjectIamMember
 import util
 
 

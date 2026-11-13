@@ -15,12 +15,12 @@
 import re
 from typing import Any
 from constructs import Construct
-from cdktf import (
+from cdktn import (
     TerraformStack,
     TerraformVariable,
     GcsBackend,
 )
-from cdktf_cdktf_provider_google.provider import GoogleProvider
+from cdktn_provider_google.provider import GoogleProvider
 import util
 from ._users import generate_users
 from ._group import generate_groups, generate_ff_groups
@@ -354,6 +354,13 @@ class MyStack(TerraformStack):
         if node.startswith("/") or node.startswith("folders/"):
             return "folder"
         return "project"
+    
+    def which_nodes(self, node):
+        if not node or node == "/" or node.startswith("organizations/"):
+            return "organizations"
+        if node.startswith("/") or node.startswith("folders/"):
+            return "folders"
+        return "projects"
 
     def resource_function(self, resource: str, nested_params=None, provider=""):
         res_name = resource
@@ -364,7 +371,7 @@ class MyStack(TerraformStack):
             res_name = "_".join([res_name] + nested_params)
         method_name = util.pascal_case(res_name)
         module = __import__(
-            f"cdktf_cdktf_provider_{provider}.{res_name}", fromlist=[res_name]
+            f"cdktn_provider_{provider}.{res_name}", fromlist=[res_name]
         )
         func = getattr(module, method_name)
         return func, res_name
@@ -416,7 +423,10 @@ class MyStack(TerraformStack):
         elif res_type == "organization":
             self.ensure_variables(["organization_id"])
             refname = self.created["vars"]["organization_id"].string_value
-        elif res_type == "folder" and self.created.get("folders", {}).get(name):
+        elif res_type == "organizations":
+            self.ensure_variables(["organization_id"])
+            refname = f"organizations/{self.created["vars"]["organization_id"].string_value}"
+        elif (res_type == "folder" or res_type == "folders") and self.created.get("folders", {}).get(name):
             refname = self.created["folders"][name].name
         elif res_type == "folder_id" and self.created.get("folders", {}).get(name):
             refname = self.created["folders"][name].folder_id

@@ -47,7 +47,7 @@ def create_ff_project(self, project):
     project["billing_account"] = self.tf_ref("billing", project.get("billing_account"))
 
     if project.get("parent"):
-        node = self.which_node(project["parent"])
+        node = self.which_nodes(project["parent"])
         project["parent"] = self.tf_ref(node, project["parent"])
 
     if project.get("shared_vpc_host_config", {}).get("enabled") is True:

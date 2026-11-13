@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from cdktf import Testing
+from cdktn import Testing
 
 # The tests below are example tests, you can find more information at
 # https://cdk.tf/testing

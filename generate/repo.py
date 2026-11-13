@@ -25,6 +25,7 @@ SSM_HOST = os.environ.get("EZTF_SSM_HOST")
 EZTF_MODE = os.environ.get("EZTF_MODE")
 EZTF_OUTPUT_GCS_PREFIX = os.environ.get("EZTF_OUTPUT_GCS_PREFIX")
 CDKTF_OUTPUT_DIR = os.environ.get("EZTF_CDK_OUTPUT_DIR") or "cdktf.out"
+GIT_PVT_KEY_FILE = os.environ.get("EZTF_PVT_KEY_FILE", "")
 
 
 def code_push_remote(repo_name, repo_folder, git_uri):
@@ -37,10 +38,10 @@ def code_push_remote(repo_name, repo_folder, git_uri):
         util.upload_folder_to_gcs_parallel(OUTPUT_BUCKET, repo_folder, gcs_prefix)
 
     if SSM_HOST and not git_uri:
-        git_uri = util.ssm_repository(repo_name, SSM_HOST)
+        git_uri = util.api_ssm_repository(repo_name, SSM_HOST)
 
     if git_uri:
-        util.push_folder_to_git(repo_folder, git_uri, "auto")
+        util.push_folder_to_git(repo_folder, git_uri, "auto", GIT_PVT_KEY_FILE)
 
 
 def resource_in_stack(stack_dict, stack_name):
@@ -76,7 +77,7 @@ def tf_creator(repo_folder, config_dict, clean_org):
         cdktf_out_file = util.cdktf_output(
             stack_name=stack_name, output_folder=CDKTF_OUTPUT_DIR
         )
-        repo_subfolder_path = f"{repo_folder}/{config_sub_stack}"
+        repo_subfolder_path = util.safe_join(repo_folder, config_sub_stack)
         util.split_tf_file(cdktf_out_file, repo_subfolder_path)
         if stack_tf_vars := tf_vars.get(config_sub_stack):
             util.tf_vars_file(stack_tf_vars, repo_subfolder_path)
@@ -101,9 +102,9 @@ def yaml_json_creator(repo_folder, config, range, resource, stack_name):
         filename = util.eztf_filename(filename, resource, range, i)
         yield filename
         if resource == "yaml":
-            util.write_file_yaml(f"{repo_folder}/{filename}", my_item)
+            util.write_file_yaml(util.safe_join(repo_folder, filename), my_item)
         elif resource == "json":
-            util.write_file_json(f"{repo_folder}/{filename}", my_item)
+            util.write_file_json(util.safe_join(repo_folder, filename), my_item)
 
 
 def anyfile_creator(repo_folder, config, range, resource, stack_name):
@@ -116,14 +117,14 @@ def anyfile_creator(repo_folder, config, range, resource, stack_name):
         vars.pop("content", None)
         filename = util.eztf_filename(filename, "", range, i)
         yield filename
-        util.write_file_any(f"{repo_folder}/{filename}", content, vars, mode="a")
+        util.write_file_any(util.safe_join(repo_folder, filename), content, vars, mode="a")
 
 
 def jsonl_creator(repo_folder, config, range, resource, stack_name):
     "jsonl file creator"
     item = copy.deepcopy(config.get(range, []))
     filename = util.eztf_filename("", "jsonl", range, 0)
-    util.write_file_jsonl(f"{repo_folder}/{filename}", item)
+    util.write_file_jsonl(util.safe_join(repo_folder, filename), item)
     yield filename
 
 
@@ -142,7 +143,7 @@ def curl_creator(repo_folder, config, range, resource, stack_name):
                 content.append(util.generate_curl_command(**cmd))
         filename = util.eztf_filename(filename, "sh", range, i)
         yield filename
-        util.write_file_any(f"{repo_folder}/{filename}", "\n\n".join(content))
+        util.write_file_any(util.safe_join(repo_folder, filename), "\n\n".join(content))
 
 
 def cmd_creator(repo_folder, config, range, resource, stack_name):
@@ -160,7 +161,7 @@ def cmd_creator(repo_folder, config, range, resource, stack_name):
         )
     filename = util.eztf_filename("", "sh", range, 0)
     yield filename
-    util.write_file_any(f"{repo_folder}/{filename}", "\n\n".join(content))
+    util.write_file_any(util.safe_join(repo_folder, filename), "\n\n".join(content))
 
 
 def setup_script_creator(repo_folder, config, range, resource, stack_name):
@@ -201,7 +202,7 @@ def my_creator(repo_folder, config):
     "other supported file creator"
     for config_sub_stack, range_resource in config["eztf"]["stacks"].items():
         output_files = []
-        repo_subfolder_path = f"{repo_folder}/{config_sub_stack}"
+        repo_subfolder_path = util.safe_join(repo_folder, config_sub_stack)
         for rr in range_resource:
             for range, resource in rr.items():
                 if creator_function.get(resource):
@@ -222,12 +223,13 @@ def my_creator(repo_folder, config):
 def main(config_dict):
     variable = config_dict["variable"]
     domain = variable["domain"]
-    config_type = variable.get("ez_config_name") or "ezy"
+    config_type = util.clean_res_id(variable.get("ez_config_name") or "") or "ezy"
     config_git_uri = variable.get("ez_repo_git_uri", "")
+    # config_git_pvt_key = variable.get("ez_repo_git_pvt_key", "")
 
     clean_domain = util.clean_res_id(domain)
     repo = f"gcp-{clean_domain}-{config_type}"
-    output_folder = f"{LOCAL_OUTPUT_DIR}/{repo}"
+    output_folder = util.safe_join(LOCAL_OUTPUT_DIR, repo)
 
     util.delete_folders([output_folder])
     my_creator(output_folder, config_dict)

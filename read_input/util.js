@@ -18,7 +18,7 @@ import { Storage } from "@google-cloud/storage";
 import { ProjectsClient } from "@google-cloud/resource-manager";
 import fs from "fs";
 import path from "path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { exec, execSync } from "node:child_process";
 
 export {
@@ -53,39 +53,42 @@ export {
   runCommandSync,
   rpShellVar,
   pascalCase,
+  generateRandomId,
+  formatPrivateKeyBody
 };
 
-  // If value is null or undefined, use an empty string (""), otherwise use the value.
-  // str = String(str ?? "")
+// If value is null or undefined, use an empty string (""), otherwise use the value.
+// str = String(str ?? "")
 
 function cleanKey(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return lower(sepArray(str, ":").join("."));
 }
 
 function lower(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return rpSpaces(rmBracket(str)).toLowerCase();
 }
 
 function underscoreRes(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return str.trim().replace(/\./g, "_").replace(/-/g, "_").toLowerCase();
 }
 
 function rpSpaces(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   return str.trim().replace(/\s+/g, "_");
 }
 
+// same as clean_res_id in generate/util.py, output is safe to use as a path segment
 function cleanRes(str) {
-  str = String(str ?? "")
-  return str.trim().replace(/\./g, "-").replace(/_/g, "-").toLowerCase();
+  str = String(str ?? "");
+  return str.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
 
 // replaces $[varName] to '${varName}'
 function rpShellVar(str) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   str = str.replace(/(\$\{[^\}]+\}|\$\([^\)]+\))/gm, `'$1'`);
   str = str.replace(/"\$\[([^\]]+)\]"/gm, `'$\{$1\}'`);
   return str;
@@ -110,7 +113,7 @@ function trim(str) {
 }
 
 function rmBracket(str, bracket = "()") {
-  str = String(str ?? "")
+  str = String(str ?? "");
   switch (bracket) {
     case "()$":
       return str.replace(/\s*\([^()]*\)\s*$/gm, "").trim();
@@ -130,7 +133,7 @@ function isValue(str, value) {
 }
 
 function pascalCase(name) {
-  name = String(name ?? "")
+  name = String(name ?? "");
   return name
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase())
@@ -138,7 +141,7 @@ function pascalCase(name) {
 }
 
 function sepArray(str, sep = ",") {
-  str = String(str ?? "")
+  str = String(str ?? "");
   str = String(str);
   return str
     .split(sep)
@@ -146,12 +149,12 @@ function sepArray(str, sep = ",") {
     .filter((value) => value);
 }
 
-function writeFile(filePath, data) {
+function writeFile(filePath, data, options = {}) {
   var dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(filePath, data);
+  fs.writeFileSync(filePath, data, options);
 }
 
 function readJson(filePath) {
@@ -213,7 +216,7 @@ function keyValStr(str, sep = ":") {
 }
 
 function sepKeyValPairs(str, sep = ";", forceVal = false, data = {}) {
-  str = String(str ?? "")
+  str = String(str ?? "");
   let strArray = sepArray(rmBracket(str, "()$"), sep);
   strArray.forEach((line) => {
     let [key, val] = keyValStr(line, ":");
@@ -359,6 +362,28 @@ async function readFromGcsPath(gcsPath) {
   }
 }
 
+function formatPrivateKeyBody(privateKey) {
+  const regex = /(\s*-----BEGIN.*?PRIVATE KEY-----\s*)(.*?)(-----END.*?PRIVATE KEY-----\s*)/s;
+  const match = privateKey.match(regex);
+  if (!match) {
+    console.error("Could not find standard SSH key header/footer. Returning original string.");
+    return privateKey + "\n";
+  }
+  const header = match[1];
+  const keyBodyWithSpaces = match[2];
+  const footer = match[3];
+
+  const formattedKeyBody = keyBodyWithSpaces.trim().split(/\s+/).join('\n')
+  return `${header.trim()}\n${formattedKeyBody}\n${footer.trim()}\n`;
+}
+
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+// own property only, never inherited ones like toString
+function ownProp(obj, key) {
+  return Object.hasOwn(obj, key) ? obj[key] : undefined;
+}
+
 function nestObject(flatObject, delimiter = ".") {
   const nestedObject = {};
 
@@ -370,6 +395,10 @@ function nestObject(flatObject, delimiter = ".") {
     );
     // const keys = flatKey.match(/(?:[^\."']+|['"][^'"]*["'])+/g);
     const keys = flatKey.match(re);
+    // sheet headers are user input, skip keys that can reach Object.prototype
+    if (!keys || keys.some((k) => UNSAFE_KEYS.has(trimQuotes(k).replace(/\[.*\]$/, "")))) {
+      continue;
+    }
     let currentLevel = nestedObject;
     let lastKeyIndex = keys.length - 1;
 
@@ -382,7 +411,7 @@ function nestObject(flatObject, delimiter = ".") {
         const arrayKey = arrayMatch[1];
         const arrayIndices = arrayMatch[2].split("][").map(Number);
 
-        currentLevel[arrayKey] = currentLevel[arrayKey] || [];
+        currentLevel[arrayKey] = ownProp(currentLevel, arrayKey) || [];
         let currentArray = currentLevel[arrayKey];
 
         for (let j in arrayIndices) {
@@ -409,7 +438,7 @@ function nestObject(flatObject, delimiter = ".") {
         if (i === lastKeyIndex) {
           currentLevel[key] = flatObject[flatKey];
         } else {
-          currentLevel[key] = currentLevel[key] || {};
+          currentLevel[key] = ownProp(currentLevel, key) || {};
           currentLevel = currentLevel[key];
         }
       }
@@ -450,6 +479,12 @@ function getCurrentTimeFormatted() {
   const minutes = String(now.getMinutes()).padStart(2, "0");
 
   return `${year}-${month}-${day}_${hours}-${minutes}`;
+}
+
+function generateRandomId(length = 6) {
+  return Math.random()
+    .toString(36)
+    .substring(2, length + 2);
 }
 
 async function getProjectIdFromNumber(projectNumber) {

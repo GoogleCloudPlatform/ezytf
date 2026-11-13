@@ -38,6 +38,8 @@ import {
   readJson,
   runCommand,
   runCommandSync,
+  generateRandomId,
+  formatPrivateKeyBody,
 } from "./util.js";
 
 export { main };
@@ -53,6 +55,17 @@ const EZTF_SUPPORTED_TF_FILE = "../generate/supported_tf.json";
 process.env.CI = 1;
 
 const supportedTf = new Set(readJson(EZTF_SUPPORTED_TF_FILE));
+
+const defaultPvtKeyFile = process.env.EZTF_SSH_PVT_FILE || "~/.ssh/id_rsa";
+const defaultPvtKey = process.env.EZTF_SSH_PVT_KEY;
+
+const keyFilePermissions = 0o600;
+
+if (defaultPvtKey) {
+  writeFile(defaultPvtKeyFile, formatPrivateKeyBody(defaultPvtKey), {
+    mode: keyFilePermissions,
+  });
+}
 
 class Eztf {
   constructor() {
@@ -74,7 +87,7 @@ function generateEztfConfig(eztf, tfRanges) {
     tf_any_data: {},
     tf_any_resource: {},
     tf_stacks: [],
-    stacks: {}
+    stacks: {},
   };
   let stacks = flatRanges(tfRanges);
   eztf.eztfConfig["eztf"]["stacks"] = stacks;
@@ -121,6 +134,10 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
     );
   } else if (gitUri.endsWith(".git")) {
     repoUrl = gitUri.slice(0, -4);
+    if (repoUrl.startsWith("git@")) {
+      repoUrl = repoUrl.slice(4).replace(":", "/");
+      repoUrl = repoUrl.replace(/-ssh(?=\..+\.sourcemanager\.dev)/, "");
+    }
     // remove -git ssm git uri
     repoUrl = repoUrl.replace(/-git(?=\..+\.sourcemanager\.dev)/, "");
   }
@@ -140,7 +157,7 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
 }
 
 async function getEzytfConfigDetails(eztfConfig, outputBucket = "") {
-  let configName = eztfConfig["variable"]["ez_config_name"] || "ezy";
+  let configName = cleanRes(eztfConfig["variable"]["ez_config_name"]) || "ezy";
   let gitUri = eztfConfig["variable"]["ez_repo_git_uri"];
   let customerName = cleanRes(eztfConfig["variable"]["domain"]);
   let repoName = `gcp-${customerName}-${configName}`;
@@ -154,14 +171,14 @@ async function getEzytfConfigDetails(eztfConfig, outputBucket = "") {
   return [fileName, repoName, output, isTfstack];
 }
 
-function writeEztfConfig(eztfConfig, configBucket, fileName) {
+async function writeEztfConfig(eztfConfig, configBucket, fileName) {
   let configYaml = createYaml(eztfConfig);
   console.log(`configBucket: ${configBucket}`);
   let eztfInputConfig;
 
   if (configBucket) {
     eztfInputConfig = `eztf-config/${fileName}`;
-    uploadToGcs(configBucket, eztfInputConfig, configYaml);
+    await uploadToGcs(configBucket, eztfInputConfig, configYaml);
   } else {
     eztfInputConfig = `${LOCAL_CONFIG_DIR}/${fileName}`;
     writeFile(eztfInputConfig, configYaml);
@@ -177,10 +194,15 @@ async function generateTF(
   outputBucket = "",
   outputGcsPrefix = "",
   asyncGenerate = false,
-  anyTfStack = true
+  anyTfStack = true,
+  gitPvtKey = ""
 ) {
   console.log("running code generation");
-
+  let pvtKeyFile = "";
+  if (gitPvtKey) {
+    pvtKeyFile = `/tmp/pvt_key_${customer}_${generateRandomId()}`;
+    writeFile(pvtKeyFile, formatPrivateKeyBody(gitPvtKey), { mode: keyFilePermissions });
+  }
   let generateScript = `export EZTF_INPUT_CONFIG=${eztfInputConfigFile} && \
     export EZTF_IS_TF=${anyTfStack} && \
     export EZTF_CDK_OUTPUT_DIR=${customer} && \
@@ -188,10 +210,11 @@ async function generateTF(
     export EZTF_CONFIG_BUCKET=${configBucket} && \
     export EZTF_OUTPUT_BUCKET=${outputBucket} && \
     export EZTF_OUTPUT_GCS_PREFIX=${outputGcsPrefix} && \
+    export EZTF_PVT_KEY_FILE=${pvtKeyFile} && \
     if [ -f "\${EZTF_ACCESS_TOKEN_FILE}" ]; then gcloud config set auth/access_token_file $EZTF_ACCESS_TOKEN_FILE 2>/dev/null ; fi && \
     cd ../generate && \
     
-    if [ "\${EZTF_IS_TF}" = "true" ]; then cdktf synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null ; fi && \
+    if [ "\${EZTF_IS_TF}" = "true" ]; then cdktn synth --hcl --output $EZTF_CDK_OUTPUT_DIR >/dev/null ; fi && \
     python -W ignore repo.py`;
   // console.log(generateScript)
   if (asyncGenerate) {
@@ -210,7 +233,8 @@ async function main(
   configType = "yaml",
   configContent = "",
   ezytfConfigGcsPath = "",
-  asyncGenerate = false
+  asyncGenerate = false,
+  gitPvtKey = ""
 ) {
   let eztfConfig;
   let eztfInputConfigFile;
@@ -227,11 +251,18 @@ async function main(
     let configData = await readFromGcsPath(ezytfConfigGcsPath);
     eztfConfig = parseConfig(configData, configType);
   }
-  eztfConfig["eztf"]["tf_stacks"] = supportedTfstacks(eztfConfig["eztf"]["stacks"], supportedTf);
+  eztfConfig["eztf"]["tf_stacks"] = supportedTfstacks(
+    eztfConfig["eztf"]["stacks"],
+    supportedTf
+  );
   let [fileName, repoName, outputDetails, isTfstack] =
     await getEzytfConfigDetails(eztfConfig, outputBucket);
-  
-  eztfInputConfigFile = writeEztfConfig(eztfConfig, configBucket, fileName);
+
+  eztfInputConfigFile = await writeEztfConfig(
+    eztfConfig,
+    configBucket,
+    fileName
+  );
   let outputGcsPrefix = outputDetails["output_gcs_prefix"];
   if (generateCode) {
     let [eztfout, eztferr] = await generateTF(
@@ -241,7 +272,8 @@ async function main(
       outputBucket,
       outputGcsPrefix,
       asyncGenerate,
-      isTfstack
+      isTfstack,
+      gitPvtKey
     );
     if (eztfout) {
       outputDetails["log"] = eztfout;

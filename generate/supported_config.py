@@ -10,6 +10,19 @@ def supported_tf_json():
         json.dump(list(creation.keys()), fp, indent=2, sort_keys=True)
 
 
+def get_latest_module_version(root_module_path):
+    """Fetches the latest version of a Terraform module from the registry.
+
+    Args:
+        root_module_path (str): The organization or user (e.g., 'terraform-google-modules/sql-db/google')
+    """
+    url = f"https://registry.terraform.io/v1/modules/{root_module_path}"
+
+    response = requests.get(url)
+    data = response.json()
+    latest_version = data.get("version")
+    return latest_version
+
 
 def get_latest_github_release(owner_repo):
     url = f"https://api.github.com/repos/{owner_repo}/releases/latest"
@@ -32,6 +45,14 @@ def git_repo_release(repos_dic):
         result[source] = latest_tag
     return result
 
+def tf_module_release(repos_dic):
+    result = {}
+    for source, _ in repos_dic.items():
+        # time.sleep(SLEEP_SECONDS)
+        latest_tag = get_latest_module_version(source)
+        print(f"--- Latest Release for {source} --- {latest_tag}")
+        result[source] = latest_tag
+    return result
 
 def module_owner_repo(source):
     repo_sp = source.split('/')
@@ -54,14 +75,14 @@ def cdktf_json_repo():
                 source_owner_repo[mod_source] = owner_repo
             mod_source_map[source] = mod_source
 
-    ver_result = git_repo_release(source_owner_repo)
+    ver_result = tf_module_release(source_owner_repo)
 
     for item in data.get("terraformModules",[]):
         source = item.get("source")
         mod_source = mod_source_map.get(source)
         if item.get("version") and source and mod_source and ver_result.get(mod_source):
             version = ver_result[mod_source].lstrip('v')
-            item["version"] = f"~> {version}"            
+            item["version"] = f"~> {version}"
             
     print(ver_result)
 

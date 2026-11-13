@@ -50,7 +50,7 @@ def create_firewall(self, fw):
 
 
 def create_fw_policy_rh(self, fp):
-    node_type = self.which_node(fp["parent_node"])
+    node_type = self.which_nodes(fp["parent_node"])
     fp["parent_node"] = self.tf_ref(node_type, fp["parent_node"])
     if fp.get("target_org"):
         fp["target_org"] = self.tf_ref("organization", "/")
@@ -107,17 +107,17 @@ def create_router(self, cr):
     vpc_name = cr["network"]
     region = cr["region"]
     vpc_re_name = f"{vpc_name}-{util.short_region(region)}"
-    cr["name"] = f"cr-{vpc_re_name}"
+    cr["name"] = cr.get("name", f"cr-{vpc_re_name}")
     for nat in cr.get("nats"):
-        nat["name"] = f"nat-{vpc_re_name}"
+        nat["name"] = nat.get("name", f"nat-{vpc_re_name}")
         for sub in nat.get("subnetworks", []):
             sub["name"] = self.tf_ref("subnet", sub["name"])
-    cr["project"] = self.tf_ref("project", cr["project"])
+    cr["project_id"] = self.tf_ref("project", cr["project_id"])
     cr["network"] = self.tf_ref("network", vpc_name)
 
     CloudRouter(
         self,
-        f"cr_{vpc_re_name}",
+        f"cr_{cr["name"]}",
         **cr,
     )
 
@@ -200,7 +200,7 @@ def create_ff_vpc_firewall(self, fw):
 
 def create_ff_firewall_policy(self, fw):
     vpc_name = fw["name"]
-    node_type = self.which_node(fw["parent_id"])
+    node_type = self.which_nodes(fw["parent_id"])
 
     fw["parent_id"] = self.tf_ref(node_type, fw["parent_id"])
 

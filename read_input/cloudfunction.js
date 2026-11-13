@@ -29,16 +29,19 @@ functions.http("readInputGenerateTF", async (req, res) => {
     const configType = req.body.configType || "yaml"; // sheet, yaml, json
     const spreadsheetId = req.body.spreadsheetId;
     const generateCode = req.body.generateCode || false;
+    const gitPvtKey = req.body.gitPvtKey;
     const asyncGenerate = req.body.async || false;
-    const configBucket =
-      req.body.configBucket || process.env.EZTF_CONFIG_BUCKET || "";
-    const outputBucket =
-      req.body.outputBucket || process.env.EZTF_OUTPUT_BUCKET || "";
+    const configBucket = process.env.EZTF_CONFIG_BUCKET || "";
+    const outputBucket = process.env.EZTF_OUTPUT_BUCKET || "";
     
     let requestLog = { ... req.body };
     if (requestLog.configContent){
       requestLog.configContentProvided = true
       delete requestLog.configContent
+    }
+    if (requestLog.gitPvtKey){
+      requestLog.gitPvtKeyProvided = true
+      delete requestLog.gitPvtKey
     }
     console.log(requestLog);
 
@@ -51,7 +54,8 @@ functions.http("readInputGenerateTF", async (req, res) => {
         configType,
         configContent,
         ezytfConfigGcsPath,
-        asyncGenerate
+        asyncGenerate,
+        gitPvtKey
       );
       res.status(200).send(output);
     } else {

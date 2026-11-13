@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf_cdktf_provider_google.storage_bucket import (
+from cdktn_provider_google.storage_bucket import (
     StorageBucket,
     StorageBucketCors,
     StorageBucketLifecycleRule,

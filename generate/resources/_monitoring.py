@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cdktf import (
+from cdktn import (
     TerraformIterator,
     Token,
 )
-from cdktf_cdktf_provider_google.monitoring_monitored_project import (
+from cdktn_provider_google.monitoring_monitored_project import (
     MonitoringMonitoredProject,
 )
-from cdktf_cdktf_provider_google.project_service import ProjectService
+from cdktn_provider_google.project_service import ProjectService
 
 
 def create_monitoring_scope(self, mon):

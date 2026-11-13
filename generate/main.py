@@ -16,7 +16,7 @@
 import os
 import copy
 import yaml
-from cdktf import App
+from cdktn import App
 import util
 from resources import MyStack, creation
 
