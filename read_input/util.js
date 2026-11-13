@@ -80,9 +80,10 @@ function rpSpaces(str) {
   return str.trim().replace(/\s+/g, "_");
 }
 
+// same as clean_res_id in generate/util.py, output is safe to use as a path segment
 function cleanRes(str) {
   str = String(str ?? "");
-  return str.trim().replace(/\./g, "-").replace(/_/g, "-").toLowerCase();
+  return str.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
 
 // replaces $[varName] to '${varName}'
@@ -376,6 +377,13 @@ function formatPrivateKeyBody(privateKey) {
   return `${header.trim()}\n${formattedKeyBody}\n${footer.trim()}\n`;
 }
 
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+// own property only, never inherited ones like toString
+function ownProp(obj, key) {
+  return Object.hasOwn(obj, key) ? obj[key] : undefined;
+}
+
 function nestObject(flatObject, delimiter = ".") {
   const nestedObject = {};
 
@@ -387,6 +395,10 @@ function nestObject(flatObject, delimiter = ".") {
     );
     // const keys = flatKey.match(/(?:[^\."']+|['"][^'"]*["'])+/g);
     const keys = flatKey.match(re);
+    // sheet headers are user input, skip keys that can reach Object.prototype
+    if (!keys || keys.some((k) => UNSAFE_KEYS.has(trimQuotes(k).replace(/\[.*\]$/, "")))) {
+      continue;
+    }
     let currentLevel = nestedObject;
     let lastKeyIndex = keys.length - 1;
 
@@ -399,7 +411,7 @@ function nestObject(flatObject, delimiter = ".") {
         const arrayKey = arrayMatch[1];
         const arrayIndices = arrayMatch[2].split("][").map(Number);
 
-        currentLevel[arrayKey] = currentLevel[arrayKey] || [];
+        currentLevel[arrayKey] = ownProp(currentLevel, arrayKey) || [];
         let currentArray = currentLevel[arrayKey];
 
         for (let j in arrayIndices) {
@@ -426,7 +438,7 @@ function nestObject(flatObject, delimiter = ".") {
         if (i === lastKeyIndex) {
           currentLevel[key] = flatObject[flatKey];
         } else {
-          currentLevel[key] = currentLevel[key] || {};
+          currentLevel[key] = ownProp(currentLevel, key) || {};
           currentLevel = currentLevel[key];
         }
       }

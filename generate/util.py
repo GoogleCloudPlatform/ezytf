@@ -31,7 +31,7 @@ from google.cloud.storage import transfer_manager
 from google.cloud import securesourcemanager_v1 as ssm
 from git import Repo
 import requests
-import jinja2
+from jinja2.sandbox import ImmutableSandboxedEnvironment
 
 RANDOM_WORD = "gcp-cdk-tf-id_"
 TF_SINGLE_OUT = "cdktf.out/stacks/{stack_name}/cdk.tf"
@@ -49,7 +49,16 @@ continent_short_name = {
 DIR_REGEX = r"(n)orth|(s)outh|(e)ast|(w)est|(c)entral"
 DIR_SUBS = "\\1\\2\\3\\4\\5"
 
-jinja_env = jinja2.Environment()
+jinja_env = ImmutableSandboxedEnvironment()  # anyfile content is user supplied
+
+
+def safe_join(base_dir, *paths):
+    """joins paths under base_dir, raises ValueError if the result escapes base_dir"""
+    path = os.path.normpath(os.path.join(base_dir, *paths))
+    base, real_path = os.path.realpath(base_dir), os.path.realpath(path)
+    if real_path == base or os.path.commonpath([base, real_path]) != base:
+        raise ValueError(f"unsafe path {path!r}, escapes {base_dir!r}")
+    return path
 
 
 def cdktf_output(stack_name, output_folder="cdktf.out"):
@@ -64,8 +73,8 @@ def clean_principal_id(name: str) -> str:
 
 
 def clean_res_id(name):
-    """returns resource id name lowercase and hypen"""
-    return name.lower().replace(".", "-").replace("_", "-")
+    """returns resource id name lowercase and hypen, same as cleanRes in read_input/util.js"""
+    return re.sub(r"[^a-z0-9-]", "-", name.strip().lower())
 
 
 _find_unsafe = re.compile(r"[^\w@$%+=:,./-]", re.ASCII).search
@@ -257,12 +266,13 @@ def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
 
 def download_from_gcs(bucket_name, source_blob_name):
     """Downloads a blob from the bucket."""
+    local_file = safe_join(os.getcwd(), source_blob_name)
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(source_blob_name)
-    os.makedirs(os.path.dirname(source_blob_name), exist_ok=True)
-    blob.download_to_filename(source_blob_name)
-    print(f"Blob {source_blob_name} downloaded to {source_blob_name}.")
+    os.makedirs(os.path.dirname(local_file), exist_ok=True)
+    blob.download_to_filename(local_file)
+    print(f"Blob {source_blob_name} downloaded to {local_file}.")
     contents = blob.download_as_string().decode("utf-8")
     return contents
 
@@ -406,7 +416,7 @@ def split_tf_file(input_file, output_folder):
         j += 1
         filename = filename or f"file_{j}"
         filename = f"{filename}.tf"
-        output_file = os.path.join(output_folder, filename)
+        output_file = safe_join(output_folder, filename)
         output_files.append(filename)
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(tfdata)

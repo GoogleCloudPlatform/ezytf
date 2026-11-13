@@ -157,7 +157,7 @@ async function getEzytfOutputDetails(repoName, gitUri, outputBucket) {
 }
 
 async function getEzytfConfigDetails(eztfConfig, outputBucket = "") {
-  let configName = eztfConfig["variable"]["ez_config_name"] || "ezy";
+  let configName = cleanRes(eztfConfig["variable"]["ez_config_name"]) || "ezy";
   let gitUri = eztfConfig["variable"]["ez_repo_git_uri"];
   let customerName = cleanRes(eztfConfig["variable"]["domain"]);
   let repoName = `gcp-${customerName}-${configName}`;
@@ -171,14 +171,14 @@ async function getEzytfConfigDetails(eztfConfig, outputBucket = "") {
   return [fileName, repoName, output, isTfstack];
 }
 
-function writeEztfConfig(eztfConfig, configBucket, fileName) {
+async function writeEztfConfig(eztfConfig, configBucket, fileName) {
   let configYaml = createYaml(eztfConfig);
   console.log(`configBucket: ${configBucket}`);
   let eztfInputConfig;
 
   if (configBucket) {
     eztfInputConfig = `eztf-config/${fileName}`;
-    uploadToGcs(configBucket, eztfInputConfig, configYaml);
+    await uploadToGcs(configBucket, eztfInputConfig, configYaml);
   } else {
     eztfInputConfig = `${LOCAL_CONFIG_DIR}/${fileName}`;
     writeFile(eztfInputConfig, configYaml);
@@ -258,7 +258,11 @@ async function main(
   let [fileName, repoName, outputDetails, isTfstack] =
     await getEzytfConfigDetails(eztfConfig, outputBucket);
 
-  eztfInputConfigFile = writeEztfConfig(eztfConfig, configBucket, fileName);
+  eztfInputConfigFile = await writeEztfConfig(
+    eztfConfig,
+    configBucket,
+    fileName
+  );
   let outputGcsPrefix = outputDetails["output_gcs_prefix"];
   if (generateCode) {
     let [eztfout, eztferr] = await generateTF(
